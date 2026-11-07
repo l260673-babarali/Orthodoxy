@@ -1,0 +1,7 @@
+<Solution>
+  <Configurations>
+    <Platform Name="x64" />
+    <Platform Name="x86" />
+  </Configurations>
+  <Project Path="Orthodoxy/Orthodoxy.vcxproj" Id="4a429500-4c04-40f9-9bcd-80edab4a5541" />
+</Solution>
