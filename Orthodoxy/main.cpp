@@ -4,6 +4,6 @@ int main()
 {
     Engine game;
     game.run();
-
+    system("pause");
     return 0;
 }

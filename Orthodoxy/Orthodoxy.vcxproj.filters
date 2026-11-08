@@ -34,6 +34,9 @@
     <Filter Include="Source Files\Engine\Graphics">
       <UniqueIdentifier>{20496e76-4d62-47ec-9cc5-31c7d8096f12}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Source Files\Game\Enemies">
+      <UniqueIdentifier>{4cac51ec-dc16-476c-9d71-239a5b86df7a}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp">
@@ -54,6 +57,9 @@
     <ClCompile Include="Engine\Graphics\Camera.cpp">
       <Filter>Source Files\Engine\Graphics</Filter>
     </ClCompile>
+    <ClCompile Include="Game\Enemies\Enemy.cpp">
+      <Filter>Source Files\Game\Enemies</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Engine\Core\Engine.h">
@@ -70,6 +76,9 @@
     </ClInclude>
     <ClInclude Include="Engine\Graphics\Camera.h">
       <Filter>Source Files\Engine\Graphics</Filter>
+    </ClInclude>
+    <ClInclude Include="Game\Enemies\Enemy.h">
+      <Filter>Source Files\Game\Enemies</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>
