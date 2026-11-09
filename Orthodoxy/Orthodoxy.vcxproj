@@ -148,7 +148,12 @@
     <ClCompile Include="Engine\Core\Engine.cpp" />
     <ClCompile Include="Engine\Graphics\Camera.cpp" />
     <ClCompile Include="Engine\Physics\Collision.cpp" />
+    <ClCompile Include="Game\Combat\Projectile.cpp" />
+    <ClCompile Include="Game\Combat\Spike.cpp" />
+    <ClCompile Include="Game\Enemies\BurstSpirit.cpp" />
     <ClCompile Include="Game\Enemies\Enemy.cpp" />
+    <ClCompile Include="Game\Enemies\Golem.cpp" />
+    <ClCompile Include="Game\Enemies\Phoenix.cpp" />
     <ClCompile Include="Game\Levels\Level.cpp" />
     <ClCompile Include="Game\Player\Player.cpp" />
     <ClCompile Include="main.cpp" />
@@ -157,7 +162,12 @@
     <ClInclude Include="Engine\Core\Engine.h" />
     <ClInclude Include="Engine\Graphics\Camera.h" />
     <ClInclude Include="Engine\Physics\Collision.h" />
+    <ClInclude Include="Game\Combat\Projectile.h" />
+    <ClInclude Include="Game\Combat\Spike.h" />
+    <ClInclude Include="Game\Enemies\BurstSpirit.h" />
     <ClInclude Include="Game\Enemies\Enemy.h" />
+    <ClInclude Include="Game\Enemies\Golem.h" />
+    <ClInclude Include="Game\Enemies\Phoenix.h" />
     <ClInclude Include="Game\Levels\Level.h" />
     <ClInclude Include="Game\Player\Player.h" />
   </ItemGroup>

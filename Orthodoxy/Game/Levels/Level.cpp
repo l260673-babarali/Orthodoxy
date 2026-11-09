@@ -26,6 +26,14 @@ Level::Level()
 
     // Solid block to test side collision
     addSolid(1850.f, 440.f, 80.f, 80.f, platformColor);
+    // Solid block to test side collision
+    addSolid(1850.f, 440.f, 80.f, 80.f, platformColor);
+
+    // Huge wall: can't be cleared with jumps alone
+    addSolid(2200.f, -800.f, 60.f, 1320.f, sf::Color(50, 50, 60));
+    // Goal ledge on top of the wall
+    addSolid(2260.f, -800.f, 140.f, 20.f, platformColor);
+
 }
 
 void Level::draw(sf::RenderWindow& window)
@@ -44,4 +52,9 @@ const std::vector<sf::RectangleShape>& Level::getPlatforms() const
 float Level::getWidth() const
 {
     return 2400.f;
+}
+
+float Level::getTop() const
+{
+    return -900.f;
 }

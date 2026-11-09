@@ -60,6 +60,21 @@
     <ClCompile Include="Game\Enemies\Enemy.cpp">
       <Filter>Source Files\Game\Enemies</Filter>
     </ClCompile>
+    <ClCompile Include="Game\Combat\Projectile.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Game\Combat\Spike.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Game\Enemies\BurstSpirit.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Game\Enemies\Golem.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Game\Enemies\Phoenix.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Engine\Core\Engine.h">
@@ -79,6 +94,21 @@
     </ClInclude>
     <ClInclude Include="Game\Enemies\Enemy.h">
       <Filter>Source Files\Game\Enemies</Filter>
+    </ClInclude>
+    <ClInclude Include="Game\Combat\Projectile.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Game\Combat\Spike.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Game\Enemies\BurstSpirit.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Game\Enemies\Golem.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Game\Enemies\Phoenix.h">
+      <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

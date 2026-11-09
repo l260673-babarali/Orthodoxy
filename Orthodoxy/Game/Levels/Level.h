@@ -15,4 +15,5 @@ public:
     void draw(sf::RenderWindow& window);
     const std::vector<sf::RectangleShape>& getPlatforms() const;
     float getWidth() const;
+    float getTop() const;
 };

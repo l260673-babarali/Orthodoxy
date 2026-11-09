@@ -21,6 +21,8 @@ private:
 
     // Crouch
     bool isCrouching = false;
+    static constexpr float crouchSpeedMultiplier = 0.45f; // crouch walk is slower
+    bool canStandUp(const std::vector<sf::RectangleShape>& solids) const;
 
     // Dash
     bool canDash = true;
@@ -60,6 +62,18 @@ private:
     bool jumpWasHeld = false;
 
     float facingDirection = 1.f;
+
+    // Wall climb
+    bool isClinging = false;
+    float wallDir = 0.f;
+    static constexpr float wallSlideSpeed = 70.f;
+    static constexpr float climbVelocity = -400.f;
+    static constexpr float minWallHeight = 300.f;
+    static constexpr float inputBufferTime = 0.08f;
+    float jumpBufferTimer = 0.f;
+    float strikeBufferTimer = 0.f;
+
+    float detectWall(const std::vector<sf::RectangleShape>& solids) const;
 
     // ---- Graphics ----
     // Textures MUST be declared before the sprite (SFML 3 sprites need one)
