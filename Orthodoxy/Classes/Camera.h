@@ -11,4 +11,5 @@ public:
 
     void follow(sf::Vector2f target, float worldWidth, float worldTop);
     void apply(sf::RenderWindow& window);
+    sf::Vector2f getCenter() const;
 };

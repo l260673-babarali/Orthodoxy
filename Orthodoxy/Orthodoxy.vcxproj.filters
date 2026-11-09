@@ -42,20 +42,11 @@
     <ClCompile Include="main.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Engine\Core\Engine.cpp">
-      <Filter>Source Files\Engine\Core</Filter>
-    </ClCompile>
     <ClCompile Include="Game\Player\Player.cpp">
       <Filter>Source Files\Game\Player</Filter>
     </ClCompile>
-    <ClCompile Include="Engine\Physics\Collision.cpp">
-      <Filter>Source Files\Engine\Physics</Filter>
-    </ClCompile>
     <ClCompile Include="Game\Levels\Level.cpp">
       <Filter>Source Files\Game\Levels</Filter>
-    </ClCompile>
-    <ClCompile Include="Engine\Graphics\Camera.cpp">
-      <Filter>Source Files\Engine\Graphics</Filter>
     </ClCompile>
     <ClCompile Include="Game\Enemies\Enemy.cpp">
       <Filter>Source Files\Game\Enemies</Filter>
@@ -75,22 +66,46 @@
     <ClCompile Include="Game\Enemies\Phoenix.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="Source Files\BurstSpirit.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Source Files\Camera.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Source Files\Collision.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Source Files\Enemy.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Source Files\Engine.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Source Files\Golem.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Source Files\Level.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Source Files\Phoenix.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Source Files\Player.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Source Files\Projectile.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Source Files\Spike.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="Engine\Core\Engine.h">
-      <Filter>Source Files\Engine\Core</Filter>
-    </ClInclude>
     <ClInclude Include="Game\Player\Player.h">
       <Filter>Source Files\Game\Player</Filter>
     </ClInclude>
-    <ClInclude Include="Engine\Physics\Collision.h">
-      <Filter>Source Files\Engine\Physics</Filter>
-    </ClInclude>
     <ClInclude Include="Game\Levels\Level.h">
       <Filter>Source Files\Game\Levels</Filter>
-    </ClInclude>
-    <ClInclude Include="Engine\Graphics\Camera.h">
-      <Filter>Source Files\Engine\Graphics</Filter>
     </ClInclude>
     <ClInclude Include="Game\Enemies\Enemy.h">
       <Filter>Source Files\Game\Enemies</Filter>
@@ -110,5 +125,43 @@
     <ClInclude Include="Game\Enemies\Phoenix.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="Classes\BurstSpirit.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Classes\Camera.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Classes\Collision.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Classes\Enemy.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Classes\Engine.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Classes\Golem.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Classes\Level.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Classes\Phoenix.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Classes\Player.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Classes\Projectile.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Classes\Spike.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="SFML-3.1.0 MSVC\license.md" />
+    <None Include="SFML-3.1.0 MSVC\readme.md" />
+    <None Include="SFML-3.1.0 MSVC\changelog.md" />
   </ItemGroup>
 </Project>

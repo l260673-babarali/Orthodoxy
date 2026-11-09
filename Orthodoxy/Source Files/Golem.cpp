@@ -1,4 +1,4 @@
-#include "Golem.h"
+#include "../Classes/Golem.h"
 
 namespace
 {

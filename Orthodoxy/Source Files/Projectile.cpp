@@ -1,4 +1,4 @@
-#include "Projectile.h"
+#include "../Classes/Projectile.h"
 
 Projectile::Projectile(sf::Vector2f center, sf::Vector2f size, sf::Vector2f startVelocity,
     float startGravity, int hitDamage, sf::Color color, float lifeSeconds)

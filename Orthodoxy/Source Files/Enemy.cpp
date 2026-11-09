@@ -1,4 +1,4 @@
-#include "Enemy.h"
+#include "../Classes/Enemy.h"
 
 Enemy::Enemy(sf::Vector2f position, sf::Vector2f size, sf::Color color, int startHealth)
     : baseColor(color), health(startHealth)
@@ -91,13 +91,24 @@ void Enemy::draw(sf::RenderWindow& window)
 
     window.draw(shape);
 
-    // Red see-through box = "this area can hurt you right now"
+    // Blue = enemy body hitbox
+    sf::RectangleShape hurtbox(shape.getSize());
+
+    hurtbox.setPosition(shape.getPosition());
+    hurtbox.setFillColor(sf::Color::Transparent);
+    hurtbox.setOutlineColor(sf::Color::Cyan);
+    hurtbox.setOutlineThickness(5.f);
+
+    window.draw(hurtbox);
+
+    // Red = active enemy attack hitbox
     sf::FloatRect box;
     if (getAttackHitbox(box))
     {
         sf::RectangleShape attackBox(box.size);
         attackBox.setPosition(box.position);
         attackBox.setFillColor(sf::Color(255, 0, 0, 100));
+
         window.draw(attackBox);
     }
 }

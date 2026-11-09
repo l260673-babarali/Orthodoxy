@@ -111,12 +111,12 @@
       <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp17</LanguageStandard>
-      <AdditionalIncludeDirectories>C:\Users\T14 GEN 4\Downloads\SFML-3.1.0-windows-vc17-64-bit\SFML-3.1.0\include</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)SFML-3.1.0 MSVC\include</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalLibraryDirectories>C:\Users\T14 GEN 4\Downloads\SFML-3.1.0-windows-vc17-64-bit\SFML-3.1.0\lib</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>$(ProjectDir)SFML-3.1.0 MSVC\lib</AdditionalLibraryDirectories>
       <AdditionalDependencies>$(CoreLibraryDependencies);%(AdditionalDependencies);sfml-graphics-d.lib;sfml-window-d.lib;sfml-system-d.lib;sfml-network-d.lib;sfml-audio-d.lib</AdditionalDependencies>
     </Link>
     <Manifest>
@@ -132,12 +132,12 @@
       <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp17</LanguageStandard>
-      <AdditionalIncludeDirectories>C:\Users\T14 GEN 4\Downloads\SFML-3.1.0-windows-vc17-64-bit\SFML-3.1.0\include</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)SFML-3.1.0 MSVC\include</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalLibraryDirectories>C:\Users\T14 GEN 4\Downloads\SFML-3.1.0-windows-vc17-64-bit\SFML-3.1.0\lib</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>$(ProjectDir)SFML-3.1.0 MSVC\lib</AdditionalLibraryDirectories>
       <AdditionalDependencies>$(CoreLibraryDependencies);%(AdditionalDependencies);sfml-graphics.lib;sfml-window.lib;sfml-system.lib;sfml-network.lib;sfml-audio.lib</AdditionalDependencies>
     </Link>
     <Manifest>
@@ -145,31 +145,36 @@
     </Manifest>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="Engine\Core\Engine.cpp" />
-    <ClCompile Include="Engine\Graphics\Camera.cpp" />
-    <ClCompile Include="Engine\Physics\Collision.cpp" />
-    <ClCompile Include="Game\Combat\Projectile.cpp" />
-    <ClCompile Include="Game\Combat\Spike.cpp" />
-    <ClCompile Include="Game\Enemies\BurstSpirit.cpp" />
-    <ClCompile Include="Game\Enemies\Enemy.cpp" />
-    <ClCompile Include="Game\Enemies\Golem.cpp" />
-    <ClCompile Include="Game\Enemies\Phoenix.cpp" />
-    <ClCompile Include="Game\Levels\Level.cpp" />
-    <ClCompile Include="Game\Player\Player.cpp" />
     <ClCompile Include="main.cpp" />
+    <ClCompile Include="Source Files\BurstSpirit.cpp" />
+    <ClCompile Include="Source Files\Camera.cpp" />
+    <ClCompile Include="Source Files\Collision.cpp" />
+    <ClCompile Include="Source Files\Enemy.cpp" />
+    <ClCompile Include="Source Files\Engine.cpp" />
+    <ClCompile Include="Source Files\Golem.cpp" />
+    <ClCompile Include="Source Files\Level.cpp" />
+    <ClCompile Include="Source Files\Phoenix.cpp" />
+    <ClCompile Include="Source Files\Player.cpp" />
+    <ClCompile Include="Source Files\Projectile.cpp" />
+    <ClCompile Include="Source Files\Spike.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="Engine\Core\Engine.h" />
-    <ClInclude Include="Engine\Graphics\Camera.h" />
-    <ClInclude Include="Engine\Physics\Collision.h" />
-    <ClInclude Include="Game\Combat\Projectile.h" />
-    <ClInclude Include="Game\Combat\Spike.h" />
-    <ClInclude Include="Game\Enemies\BurstSpirit.h" />
-    <ClInclude Include="Game\Enemies\Enemy.h" />
-    <ClInclude Include="Game\Enemies\Golem.h" />
-    <ClInclude Include="Game\Enemies\Phoenix.h" />
-    <ClInclude Include="Game\Levels\Level.h" />
-    <ClInclude Include="Game\Player\Player.h" />
+    <ClInclude Include="Classes\BurstSpirit.h" />
+    <ClInclude Include="Classes\Camera.h" />
+    <ClInclude Include="Classes\Collision.h" />
+    <ClInclude Include="Classes\Enemy.h" />
+    <ClInclude Include="Classes\Engine.h" />
+    <ClInclude Include="Classes\Golem.h" />
+    <ClInclude Include="Classes\Level.h" />
+    <ClInclude Include="Classes\Phoenix.h" />
+    <ClInclude Include="Classes\Player.h" />
+    <ClInclude Include="Classes\Projectile.h" />
+    <ClInclude Include="Classes\Spike.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="SFML-3.1.0 MSVC\changelog.md" />
+    <None Include="SFML-3.1.0 MSVC\license.md" />
+    <None Include="SFML-3.1.0 MSVC\readme.md" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

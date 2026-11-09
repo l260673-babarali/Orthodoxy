@@ -1,4 +1,4 @@
-#include "Spike.h"
+#include "../Classes/Spike.h"
 
 Spike::Spike(float centerX, float floorY, float waitTime)
     : x(centerX), groundY(floorY), delay(waitTime)
@@ -38,8 +38,8 @@ void Spike::update(float deltaTime)
     }
     else if (t < riseTime + stayTime + sinkTime)
     {
-        float sinkProgress = (t - riseTime - stayTime) / sinkTime;
-        height = maxHeight * (1.f - sinkProgress);
+		float sinkProgress = (t - riseTime - stayTime) / sinkTime; // sinkProgress is the fraction of the sink time that has passed, from 0 to 1
+		height = maxHeight * (1.f - sinkProgress); // it tells us how far along the sink we are, from 0 to 1
         dangerous = true;
         shape.setFillColor(sf::Color(150, 140, 130));
     }
@@ -53,7 +53,7 @@ void Spike::update(float deltaTime)
         dangerous = false;
 
     shape.setSize({ width, height });
-    shape.setPosition({ x - width / 2.f, groundY - height });
+	shape.setPosition({ x - width / 2.f, groundY - height }); // we minus the width because the position is the top left corner not the center
 }
 
 void Spike::draw(sf::RenderWindow& window)
@@ -62,6 +62,14 @@ void Spike::draw(sf::RenderWindow& window)
         window.draw(shape);
 }
 
-bool Spike::isAlive() const { return alive; }
-bool Spike::isDangerous() const { return dangerous; }
-sf::FloatRect Spike::getBounds() const { return shape.getGlobalBounds(); }
+bool Spike::isAlive() const 
+{ 
+    return alive; 
+}
+bool Spike::isDangerous() const 
+{ 
+    return dangerous; 
+}
+sf::FloatRect Spike::getBounds() const 
+{ return shape.getGlobalBounds(); 
+}

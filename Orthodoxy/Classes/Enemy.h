@@ -3,8 +3,8 @@
 #include <vector>
 #include <cmath>
 #include <algorithm>
-#include "../Combat/Projectile.h"
-#include "../Combat/Spike.h"
+#include "../Classes/Projectile.h"
+#include "../Classes/Spike.h"
 
 // Lets enemies put rocks, fireballs and spikes into the game
 struct EnemyWorld

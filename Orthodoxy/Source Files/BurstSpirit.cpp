@@ -1,4 +1,4 @@
-#include "BurstSpirit.h"
+#include "../Classes/BurstSpirit.h"
 
 namespace
 {

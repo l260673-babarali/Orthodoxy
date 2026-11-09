@@ -1,9 +1,8 @@
-#include "Engine\Core\Engine.h"
+#include "Classes/Engine.h"
 
 int main()
 {
     Engine game;
     game.run();
-    system("pause");
     return 0;
 }

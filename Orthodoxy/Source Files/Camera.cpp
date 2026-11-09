@@ -1,4 +1,4 @@
-#include "Camera.h"
+#include "../Classes/Camera.h"
 
 Camera::Camera()
 {
@@ -29,4 +29,9 @@ void Camera::follow(sf::Vector2f target, float worldWidth, float worldTop)
 void Camera::apply(sf::RenderWindow& window)
 {
     window.setView(view);
+}
+
+sf::Vector2f Camera::getCenter() const
+{
+    return view.getCenter();
 }

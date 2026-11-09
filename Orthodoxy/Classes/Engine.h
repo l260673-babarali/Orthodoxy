@@ -2,12 +2,14 @@
 #include <SFML/Graphics.hpp>
 #include <vector>
 #include <memory>
-#include "../../Game/Player/Player.h"
-#include "../../Game/Levels/Level.h"
-#include "../../Game/Enemies/Enemy.h"
-#include "../../Game/Combat/Projectile.h"
-#include "../../Game/Combat/Spike.h"
-#include "../Graphics/Camera.h"
+#include "Player.h"
+#include "Level.h"
+#include "Enemy.h"
+#include "Projectile.h"
+#include "Spike.h"
+#include "Camera.h"
+#include <stdexcept>
+#include <iostream>
 
 class Engine
 {
@@ -18,6 +20,10 @@ private:
     std::vector<std::unique_ptr<Enemy>> enemies;
     std::vector<Projectile> projectiles;
     std::vector<Spike> spikes;
+    sf::Texture healthFullTexture;
+    sf::Texture healthEmptyTexture;
+    sf::Texture entranceBackgroundTexture;
+    std::unique_ptr<sf::Sprite> entranceBackground;
     sf::Clock clock;
     Camera camera;
 
@@ -28,5 +34,6 @@ private:
 
 public:
     Engine();
+
     void run();
 };
