@@ -1,6 +1,12 @@
-C:\Users\Babar Ali\source\repos\Orthodoxy\Orthodoxy\Engine\Core\Engine.cpp;C:\Users\Babar Ali\source\repos\Orthodoxy\Orthodoxy\x64\Debug\Engine.obj
-C:\Users\Babar Ali\source\repos\Orthodoxy\Orthodoxy\Engine\Graphics\Camera.cpp;C:\Users\Babar Ali\source\repos\Orthodoxy\Orthodoxy\x64\Debug\Camera.obj
-C:\Users\Babar Ali\source\repos\Orthodoxy\Orthodoxy\Engine\Physics\Collision.cpp;C:\Users\Babar Ali\source\repos\Orthodoxy\Orthodoxy\x64\Debug\Collision.obj
-C:\Users\Babar Ali\source\repos\Orthodoxy\Orthodoxy\Game\Levels\Level.cpp;C:\Users\Babar Ali\source\repos\Orthodoxy\Orthodoxy\x64\Debug\Level.obj
-C:\Users\Babar Ali\source\repos\Orthodoxy\Orthodoxy\Game\Player\Player.cpp;C:\Users\Babar Ali\source\repos\Orthodoxy\Orthodoxy\x64\Debug\Player.obj
-C:\Users\Babar Ali\source\repos\Orthodoxy\Orthodoxy\main.cpp;C:\Users\Babar Ali\source\repos\Orthodoxy\Orthodoxy\x64\Debug\main.obj
+C:\Users\T14 GEN 4\Downloads\Orthodoxy-main\Orthodoxy-main\Orthodoxy\Engine\Core\Engine.cpp;C:\Users\T14 GEN 4\Downloads\Orthodoxy-main\Orthodoxy-main\Orthodoxy\x64\Debug\Engine.obj
+C:\Users\T14 GEN 4\Downloads\Orthodoxy-main\Orthodoxy-main\Orthodoxy\Engine\Graphics\Camera.cpp;C:\Users\T14 GEN 4\Downloads\Orthodoxy-main\Orthodoxy-main\Orthodoxy\x64\Debug\Camera.obj
+C:\Users\T14 GEN 4\Downloads\Orthodoxy-main\Orthodoxy-main\Orthodoxy\Engine\Physics\Collision.cpp;C:\Users\T14 GEN 4\Downloads\Orthodoxy-main\Orthodoxy-main\Orthodoxy\x64\Debug\Collision.obj
+C:\Users\T14 GEN 4\Downloads\Orthodoxy-main\Orthodoxy-main\Orthodoxy\Game\Combat\Projectile.cpp;C:\Users\T14 GEN 4\Downloads\Orthodoxy-main\Orthodoxy-main\Orthodoxy\x64\Debug\Projectile.obj
+C:\Users\T14 GEN 4\Downloads\Orthodoxy-main\Orthodoxy-main\Orthodoxy\Game\Combat\Spike.cpp;C:\Users\T14 GEN 4\Downloads\Orthodoxy-main\Orthodoxy-main\Orthodoxy\x64\Debug\Spike.obj
+C:\Users\T14 GEN 4\Downloads\Orthodoxy-main\Orthodoxy-main\Orthodoxy\Game\Enemies\BurstSpirit.cpp;C:\Users\T14 GEN 4\Downloads\Orthodoxy-main\Orthodoxy-main\Orthodoxy\x64\Debug\BurstSpirit.obj
+C:\Users\T14 GEN 4\Downloads\Orthodoxy-main\Orthodoxy-main\Orthodoxy\Game\Enemies\Enemy.cpp;C:\Users\T14 GEN 4\Downloads\Orthodoxy-main\Orthodoxy-main\Orthodoxy\x64\Debug\Enemy.obj
+C:\Users\T14 GEN 4\Downloads\Orthodoxy-main\Orthodoxy-main\Orthodoxy\Game\Enemies\Golem.cpp;C:\Users\T14 GEN 4\Downloads\Orthodoxy-main\Orthodoxy-main\Orthodoxy\x64\Debug\Golem.obj
+C:\Users\T14 GEN 4\Downloads\Orthodoxy-main\Orthodoxy-main\Orthodoxy\Game\Enemies\Phoenix.cpp;C:\Users\T14 GEN 4\Downloads\Orthodoxy-main\Orthodoxy-main\Orthodoxy\x64\Debug\Phoenix.obj
+C:\Users\T14 GEN 4\Downloads\Orthodoxy-main\Orthodoxy-main\Orthodoxy\Game\Levels\Level.cpp;C:\Users\T14 GEN 4\Downloads\Orthodoxy-main\Orthodoxy-main\Orthodoxy\x64\Debug\Level.obj
+C:\Users\T14 GEN 4\Downloads\Orthodoxy-main\Orthodoxy-main\Orthodoxy\Game\Player\Player.cpp;C:\Users\T14 GEN 4\Downloads\Orthodoxy-main\Orthodoxy-main\Orthodoxy\x64\Debug\Player.obj
+C:\Users\T14 GEN 4\Downloads\Orthodoxy-main\Orthodoxy-main\Orthodoxy\main.cpp;C:\Users\T14 GEN 4\Downloads\Orthodoxy-main\Orthodoxy-main\Orthodoxy\x64\Debug\main.obj
