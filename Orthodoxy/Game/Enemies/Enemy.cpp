@@ -1,22 +1,15 @@
 #include "Enemy.h"
 
-Enemy::Enemy(float x, float y, float left, float right)
-    : patrolLeft(left), patrolRight(right)
+Enemy::Enemy(sf::Vector2f position, sf::Vector2f size, sf::Color color, int startHealth)
+    : baseColor(color), health(startHealth)
 {
-    shape.setSize({ 40.f, 40.f });
-    shape.setPosition({ x, y });
-    shape.setFillColor(sf::Color(180, 40, 40));
+    shape.setSize(size);
+    shape.setPosition(position);
+    shape.setFillColor(color);
 }
 
-void Enemy::update(float deltaTime, const std::vector<sf::RectangleShape>& solids)
+void Enemy::updateHurtFlash(float deltaTime)
 {
-    if (!alive)
-        return;
-
-    const float gravity = 981.f;
-    const float knockbackSpeed = 250.f;
-
-    // Hurt flash
     if (hurtTimer > 0.f)
     {
         hurtTimer -= deltaTime;
@@ -24,48 +17,50 @@ void Enemy::update(float deltaTime, const std::vector<sf::RectangleShape>& solid
     }
     else
     {
-        shape.setFillColor(sf::Color(180, 40, 40));
+        shape.setFillColor(baseColor);
     }
+}
 
-    // ---- Horizontal movement ----
-    float moveX = 0.f;
-    if (knockbackTimer > 0.f)
-    {
-        moveX = knockbackDir * knockbackSpeed * deltaTime;
-        knockbackTimer -= deltaTime;
-    }
-    else
-    {
-        moveX = direction * speed * deltaTime;
-    }
+// Returns how far to push the enemy this frame after being hit (0 if not hit)
+float Enemy::consumeKnockback(float deltaTime)
+{
+    if (knockbackTimer <= 0.f)
+        return 0.f;
 
+    knockbackTimer -= deltaTime;
+    return knockbackDir * knockbackSpeed * deltaTime;
+}
+
+// Walk sideways and stop at walls. Returns true if we hit a wall.
+bool Enemy::moveHorizontal(float moveX, const std::vector<sf::RectangleShape>& solids)
+{
+    if (moveX == 0.f)
+        return false;
+
+    bool hitWall = false;
     shape.move({ moveX, 0.f });
 
     for (const auto& solid : solids)
     {
         sf::FloatRect p = shape.getGlobalBounds();
         sf::FloatRect s = solid.getGlobalBounds();
-
         if (p.findIntersection(s))
         {
             if (moveX > 0.f)
                 shape.setPosition({ s.position.x - p.size.x, p.position.y });
             else
                 shape.setPosition({ s.position.x + s.size.x, p.position.y });
-
-            // Hit a wall: turn around
-            if (knockbackTimer <= 0.f)
-                direction = -direction;
+            hitWall = true;
         }
     }
+    return hitWall;
+}
 
-    // Patrol limits
-    if (shape.getPosition().x < patrolLeft)
-        direction = 1.f;
-    if (shape.getPosition().x + shape.getSize().x > patrolRight)
-        direction = -1.f;
+// Fall down and stand on the floor
+void Enemy::applyGravity(float deltaTime, const std::vector<sf::RectangleShape>& solids)
+{
+    const float gravity = 981.f;
 
-    // ---- Vertical movement ----
     velocityY += gravity * deltaTime;
     shape.move({ 0.f, velocityY * deltaTime });
 
@@ -73,7 +68,6 @@ void Enemy::update(float deltaTime, const std::vector<sf::RectangleShape>& solid
     {
         sf::FloatRect p = shape.getGlobalBounds();
         sf::FloatRect s = solid.getGlobalBounds();
-
         if (p.findIntersection(s))
         {
             if (velocityY > 0.f)
@@ -92,15 +86,26 @@ void Enemy::update(float deltaTime, const std::vector<sf::RectangleShape>& solid
 
 void Enemy::draw(sf::RenderWindow& window)
 {
-    if (alive)
-        window.draw(shape);
+    if (!alive)
+        return;
+
+    window.draw(shape);
+
+    // Red see-through box = "this area can hurt you right now"
+    sf::FloatRect box;
+    if (getAttackHitbox(box))
+    {
+        sf::RectangleShape attackBox(box.size);
+        attackBox.setPosition(box.position);
+        attackBox.setFillColor(sf::Color(255, 0, 0, 100));
+        window.draw(attackBox);
+    }
 }
 
 void Enemy::takeDamage(int amount, int strikeId, float fromDirection)
 {
     health -= amount;
     lastHitStrikeId = strikeId;
-
     hurtTimer = 0.15f;
     knockbackTimer = 0.15f;
     knockbackDir = fromDirection;
