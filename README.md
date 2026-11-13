@@ -42,18 +42,11 @@ Orthodoxy/
 - [SFML 3](https://www.sfml-dev.org/) (Graphics, Window, and System modules)
 - Visual Studio / MSVC project environment (project file included)
 
-## Building and Running
-
-1. Install SFML 3 and configure its include and library paths in Visual Studio.
-2. Open `Orthodoxy.slnx` or `Orthodoxy.vcxproj`.
-3. Build the project in your chosen configuration.
-4. Run the generated executable.
-
-Keep the `Assets` folder available relative to the program's working directory so textures can load correctly.
-
 ## Controls
 
-Controls are handled by the game input system. Check the key bindings in the source code for the current configuration.
+J to attack
+WASD to move
+L Shift to dash
 
 ## Project Status
 
