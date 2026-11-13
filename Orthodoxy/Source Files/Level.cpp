@@ -1,9 +1,9 @@
-
 #include "../Classes/Level.h"
 
-void Level::addSolid(float x, float y, float w, float h)
+// Adds one invisible solid block (a platform or the floor)
+void Level::addSolid(float x, float y, float width, float height)
 {
-    sf::RectangleShape solid({ w, h });
+    sf::RectangleShape solid({ width, height });
     solid.setPosition({ x, y });
 
     // Temporary visible collision boxes
@@ -15,13 +15,20 @@ void Level::addSolid(float x, float y, float w, float h)
 }
 
 Level::Level()
-    : background(backgroundTexture)
+    : background(background_texture)
 {
-    backgroundLoaded =
-        backgroundTexture.loadFromFile("Assets/Sprites/monastery_entrance.png");
-
-    if (backgroundLoaded)
+    background_loaded = background_texture.loadFromFile(
+        "Assets/Sprites/Backgrounds/Entrance/monastery_entrance.jpg");
+    if (background_loaded)
+    {
+        background.setTexture(background_texture, true);   // true = reset the texture rect
+        // Stretch the picture so it covers the whole level (1360 x 768)
+        sf::Vector2u size = background_texture.getSize();
+        background.setScale({ 1360.f / size.x, 768.f / size.y });
         background.setPosition({ 0.f, 0.f });
+    }
+
+    // The platform positions below were measured on the 1360 x 768 background picture
 
     // Main floor
     addSolid(0.f, 686.f, 1360.f, 82.f);
@@ -47,9 +54,10 @@ Level::Level()
 
 void Level::draw(sf::RenderWindow& window)
 {
-    if (backgroundLoaded)
+    if (background_loaded)
         window.draw(background);
 
+    // The red boxes are the platforms (remove this loop to hide them)
     for (const auto& platform : platforms)
         window.draw(platform);
 }
@@ -60,6 +68,7 @@ Level::getPlatforms() const
     return platforms;
 }
 
+// Size of the level in pixels
 float Level::getWidth() const
 {
     return 1360.f;
@@ -68,4 +77,9 @@ float Level::getWidth() const
 float Level::getTop() const
 {
     return 0.f;
+}
+
+float Level::getHeight() const
+{
+    return 768.f;
 }

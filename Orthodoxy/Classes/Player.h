@@ -3,93 +3,90 @@
 #include <vector>
 #include <string>
 
+// The knight: movement, combat, health and animation
 class Player
 {
 private:
-    enum class AnimState { Idle, Walk, CrouchIdle, CrouchWalk, Air, Dash };
-
-    // Hitbox (invisible unless debugHitbox is true)
+    // Hitbox (invisible unless debug_hitbox is true)
     sf::RectangleShape shape;
-    bool debugHitbox = false;
+    bool debug_hitbox = false;
 
-    static constexpr float hitboxWidth = 50.f;
-    static constexpr float standHeight = 80.f;
-    static constexpr float crouchHeight = 44.f;
+    static constexpr float hitbox_width = 50.f;
+    static constexpr float stand_height = 80.f;
+    static constexpr float crouch_height = 44.f;
 
-    float velocityY = 0.f;
-    bool OnGround = false;
+    float velocity_y = 0.f;     // up/down speed (negative = going up)
+    bool is_on_ground = false;
 
     // Crouch
-    bool isCrouching = false;
-    static constexpr float crouchSpeedMultiplier = 0.45f; // crouch walk is slower
+    bool is_crouching = false;
+    static constexpr float crouch_speed_multiplier = 0.45f; // crouch walk is slower
     bool canStandUp(const std::vector<sf::RectangleShape>& solids) const;
 
     // Dash
-    bool canDash = true;
-    bool isDashing = false;
-    float dashSpeed = 650.f;
-    float dashDuration = 0.2f;
-    float dashTimer = 0.f;
-    float dashCooldown = 0.4f;
-    float dashCooldownTimer = 0.f;
+    bool can_dash = true;           // one dash per jump; refilled when we touch the ground
+    bool is_dashing = false;
+    float dash_speed = 650.f;
+    float dash_duration = 0.2f;
+    float dash_timer = 0.f;
+    float dash_cooldown = 0.4f;
+    float dash_cooldown_timer = 0.f;
 
     // Strike
-    bool  isStriking = false;
-    bool  strikeWasHeld = false;
-    float strikeDuration = 0.25f;      // whole animation length
-    float strikeActiveStart = 0.06f;   // hitbox turns on
-    float strikeActiveEnd = 0.18f;     // hitbox turns off
-    float strikeTimer = 0.f;
-    float strikeCooldown = 0.35f;
-    float strikeCooldownTimer = 0.f;
-    float strikeRange = 60.f;          // how far the hit reaches in front
-    float strikeHeight = 50.f;
-    int   strikeId = 0;                // new number every swing (so an enemy is hit once per swing)
+    bool  is_striking = false;
+    bool  strike_was_held = false;       // was the strike key down last frame? (to detect a fresh press)
+    float strike_duration = 0.25f;      // whole animation length
+    float strike_active_start = 0.06f;   // hitbox turns on
+    float strike_active_end = 0.18f;     // hitbox turns off
+    float strike_timer = 0.f;
+    float strike_cooldown = 0.35f;
+    float strike_cooldown_timer = 0.f;
+    float strike_range = 60.f;          // how far the hit reaches in front
+    float strike_height = 50.f;
+    int   strike_id = 0;                // new number every swing (so an enemy is hit once per swing)
 
     // Health
-    int   maxHealth = 5;
+    int   max_health = 5;
     int   health = 5;
-    float invincibleTime = 1.0f;
-    float invincibleTimer = 0.f;
-    float knockbackTimer = 0.f;
-    float knockbackVX = 0.f;
+    float invincible_time = 1.0f;       // how long we are safe after being hit
+    float invincible_timer = 0.f;
+    float knockback_timer = 0.f;
+    float knockback_push_x = 0.f;
 
     // Coyote time + double jump
-    float coyoteTime = 0.1f;
-    float coyoteTimer = 0.f;
-    int maxAirJumps = 1;
-    int airJumpsLeft = 1;
-    bool jumpWasHeld = false;
+    float coyote_time = 0.1f;           // can still jump this long after walking off a ledge
+    float coyote_timer = 0.f;
+    int max_air_jumps = 1;
+    int air_jumps_left = 1;
+    bool jump_was_held = false;
 
-    float facingDirection = 1.f;
+    float facing_direction = 1.f;       // 1 = right, -1 = left
 
     // Wall climb
-    bool isClinging = false;
-    float wallDir = 0.f;
-    static constexpr float wallSlideSpeed = 70.f;
-    static constexpr float climbVelocity = -400.f;
-    static constexpr float minWallHeight = 300.f;
-    static constexpr float inputBufferTime = 0.08f;
-    float jumpBufferTimer = 0.f;
-    float strikeBufferTimer = 0.f;
+    bool is_clinging = false;
+    float wall_dir = 0.f;               // which side the wall is on (-1 left, 1 right)
+    static constexpr float wall_slide_speed = 70.f;
+    static constexpr float climb_velocity = -400.f;
+    static constexpr float min_wall_height = 300.f;   // only tall solids count as climbable walls
+    static constexpr float input_buffer_time = 0.08f;
+    float jump_buffer_timer = 0.f;
+    float strike_buffer_timer = 0.f;
 
     float detectWall(const std::vector<sf::RectangleShape>& solids) const;
 
-    // Graphics 
-    sf::Texture sheetTexture;   // must come BEFORE the sprite
+    // Graphics
+    sf::Texture sheet_texture;   // must come BEFORE the sprite
     sf::Sprite sprite;
-    float animTimer = 0.f;
-    float spriteScale = 2.0f;
-    bool spriteFacesRight = true;
-
+    float anim_timer = 0.f;
+    float sprite_scale = 2.0f;
 
 public:
     Player();
 
     void update(
-        float deltaTime,
+        float delta_time,
         const std::vector<sf::RectangleShape>& solids,
-        float worldWidth
+        float world_width
     );
 
     void draw(sf::RenderWindow& window);
@@ -99,9 +96,11 @@ public:
     sf::FloatRect getStrikeHitbox() const;
     int getStrikeId() const;
 
-    void takeDamage(int amount, float fromDirection);   // fromDirection: -1 push left, 1 push right
+    void takeDamage(int amount, float from_direction);   // from_direction: -1 push left, 1 push right
     sf::FloatRect getBounds() const;
     float getFacing() const;
     int getHealth() const;
     int getMaxHealth() const;
+
+    void reset();   // put the player back at the start with full health
 };

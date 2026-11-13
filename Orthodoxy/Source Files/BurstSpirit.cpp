@@ -2,102 +2,105 @@
 
 namespace
 {
-    const sf::Color spiritColor(170, 120, 255);
+    const sf::Color spirit_color(170, 120, 255);
 }
 
 BurstSpirit::BurstSpirit(float x, float y)
-    : Enemy({ x, y }, { 30.f, 30.f }, spiritColor, 2)
+    : Enemy({ x, y }, { 30.f, 30.f }, spirit_color, 2)
 {
 }
 
-void BurstSpirit::update(float deltaTime, const std::vector<sf::RectangleShape>&,
-    sf::Vector2f playerCenter, EnemyWorld&)
+void BurstSpirit::update(float delta_time, const std::vector<sf::RectangleShape>&,
+    sf::Vector2f player_center, EnemyWorld&)
 {
     if (!alive)
         return;
 
-    updateHurtFlash(deltaTime);
-    bobTimer += deltaTime;
-    stateTimer += deltaTime;
-    shape.move({ consumeKnockback(deltaTime), 0.f });
+    updateHurtFlash(delta_time);
+    bob_timer += delta_time;
+    state_timer += delta_time;
+    shape.move({ consumeKnockback(delta_time), 0.f });
 
     // ---- Is the player standing still? ----
-    float playerSpeed = 1000.f; // pretend "moving" on the very first frame
-    if (hasLastPlayerPos && deltaTime > 0.f)
+    // Speed = distance moved since last frame / time passed
+    float player_speed = 1000.f; // pretend "moving" on the very first frame
+    if (has_last_player_pos && delta_time > 0.f)
     {
-        sf::Vector2f moved = playerCenter - lastPlayerCenter;
-        playerSpeed = std::sqrt(moved.x * moved.x + moved.y * moved.y) / deltaTime;
+        sf::Vector2f moved = player_center - last_player_center;
+        player_speed = std::sqrt(moved.x * moved.x + moved.y * moved.y) / delta_time;
     }
-    lastPlayerCenter = playerCenter;
-    hasLastPlayerPos = true;
+    last_player_center = player_center;
+    has_last_player_pos = true;
 
-    if (playerSpeed < 20.f)
-        stillTimer += deltaTime;
+    if (player_speed < 20.f)
+        still_timer += delta_time;
     else
-        stillTimer = 0.f; // moving resets the countdown
+        still_timer = 0.f; // moving resets the countdown
 
     // ---- Distance to the player ----
-    sf::Vector2f toPlayer = playerCenter - getCenter();
-    float dist = std::sqrt(toPlayer.x * toPlayer.x + toPlayer.y * toPlayer.y);
+    sf::Vector2f to_player = player_center - getCenter();
+    float distance_to_player = std::sqrt(to_player.x * to_player.x + to_player.y * to_player.y);
 
-    if (dist <= sightRange)
+    if (distance_to_player <= sight_range)
         noticed = true;
 
     switch (state)
     {
     case State::Chase:
-        baseColor = spiritColor;
+        base_color = spirit_color;
         if (noticed)
         {
-            if (dist > 40.f)
-                shape.move(toPlayer / dist * chaseSpeed * deltaTime);
+            // Fly toward the player (to_player / distance = direction with length 1)
+            if (distance_to_player > 40.f)
+                shape.move(to_player / distance_to_player * chase_speed * delta_time);
 
             // Gentle floating up and down
-            shape.move({ 0.f, std::sin(bobTimer * 6.f) * 25.f * deltaTime });
+            shape.move({ 0.f, std::sin(bob_timer * 6.f) * 25.f * delta_time });
 
             // Close AND player stopped for a bit = start the countdown
-            if (dist <= triggerRange && stillTimer >= stillTimeNeeded)
+            if (distance_to_player <= trigger_range && still_timer >= still_time_needed)
             {
                 state = State::Fuse;
-                stateTimer = 0.f;
+                state_timer = 0.f;
             }
         }
         break;
 
     case State::Fuse:
         // Flash red/white. The spirit stops and waits, so you can run away or kill it.
-        baseColor = (static_cast<int>(stateTimer * 12.f) % 2 == 0)
+        base_color = (static_cast<int>(state_timer * 12.f) % 2 == 0)
             ? sf::Color(255, 80, 80) : sf::Color::White;
-        if (stateTimer >= fuseTime)
+        if (state_timer >= fuse_time)
         {
             state = State::Exploding;
-            stateTimer = 0.f;
+            state_timer = 0.f;
         }
         break;
 
     case State::Exploding:
-        baseColor = sf::Color(255, 160, 50);
-        if (stateTimer >= explosionTime)
+        base_color = sf::Color(255, 160, 50);
+        if (state_timer >= explosion_time)
             alive = false;
         break;
     }
 }
 
 // Can't be killed during the boom itself
-void BurstSpirit::takeDamage(int amount, int strikeId, float fromDirection)
+void BurstSpirit::takeDamage(int amount, int strike_id, float from_direction)
 {
     if (state == State::Exploding)
         return;
-    Enemy::takeDamage(amount, strikeId, fromDirection);
+    Enemy::takeDamage(amount, strike_id, from_direction);
 }
 
+// The explosion is a square around the spirit
 bool BurstSpirit::getAttackHitbox(sf::FloatRect& box) const
 {
     if (state != State::Exploding)
         return false;
 
-    sf::Vector2f c = getCenter();
-    box = sf::FloatRect({ c.x - explosionRadius, c.y - explosionRadius },
-        { explosionRadius * 2.f, explosionRadius * 2.f });
+    sf::Vector2f center = getCenter();
+    box = sf::FloatRect({ center.x - explosion_radius, center.y - explosion_radius },
+        { explosion_radius * 2.f, explosion_radius * 2.f });
     return true;
 }
