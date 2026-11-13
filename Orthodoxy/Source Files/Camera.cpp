@@ -6,26 +6,30 @@ Camera::Camera()
     view.setCenter({ 400.f, 300.f });
 }
 
-void Camera::follow(sf::Vector2f target, float worldWidth, float worldTop)
+// Center the view on the target, but clamp it so we never see outside the level
+void Camera::follow(sf::Vector2f target, float world_width, float world_top, float world_bottom)
 {
-    float halfViewWidth = view.getSize().x / 2.f;
-    float halfViewHeight = view.getSize().y / 2.f;
+    float half_view_width = view.getSize().x / 2.f;
+    float half_view_height = view.getSize().y / 2.f;
 
-    float cameraX = target.x;
-    if (cameraX < halfViewWidth)
-        cameraX = halfViewWidth;
-    if (cameraX > worldWidth - halfViewWidth)
-        cameraX = worldWidth - halfViewWidth;
+    // Left and right edges
+    float camera_x = target.x;
+    if (camera_x < half_view_width)
+        camera_x = half_view_width;
+    if (camera_x > world_width - half_view_width)
+        camera_x = world_width - half_view_width;
 
-    float cameraY = target.y;
-    if (cameraY > 300.f)
-        cameraY = 300.f;
-    if (cameraY < worldTop + halfViewHeight)
-        cameraY = worldTop + halfViewHeight;
+    // Top and bottom edges
+    float camera_y = target.y;
+    if (camera_y > world_bottom - half_view_height)
+        camera_y = world_bottom - half_view_height;
+    if (camera_y < world_top + half_view_height)
+        camera_y = world_top + half_view_height;
 
-    view.setCenter({ cameraX, cameraY });
+    view.setCenter({ camera_x, camera_y });
 }
 
+// Make the window draw using this camera
 void Camera::apply(sf::RenderWindow& window)
 {
     window.setView(view);

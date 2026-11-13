@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
     <Filter Include="Source Files">
@@ -42,37 +42,10 @@
     <ClCompile Include="main.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Game\Player\Player.cpp">
-      <Filter>Source Files\Game\Player</Filter>
-    </ClCompile>
-    <ClCompile Include="Game\Levels\Level.cpp">
-      <Filter>Source Files\Game\Levels</Filter>
-    </ClCompile>
-    <ClCompile Include="Game\Enemies\Enemy.cpp">
-      <Filter>Source Files\Game\Enemies</Filter>
-    </ClCompile>
-    <ClCompile Include="Game\Combat\Projectile.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="Game\Combat\Spike.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="Game\Enemies\BurstSpirit.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="Game\Enemies\Golem.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="Game\Enemies\Phoenix.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="Source Files\BurstSpirit.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="Source Files\Camera.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="Source Files\Collision.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="Source Files\Enemy.cpp">
@@ -101,37 +74,10 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="Game\Player\Player.h">
-      <Filter>Source Files\Game\Player</Filter>
-    </ClInclude>
-    <ClInclude Include="Game\Levels\Level.h">
-      <Filter>Source Files\Game\Levels</Filter>
-    </ClInclude>
-    <ClInclude Include="Game\Enemies\Enemy.h">
-      <Filter>Source Files\Game\Enemies</Filter>
-    </ClInclude>
-    <ClInclude Include="Game\Combat\Projectile.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="Game\Combat\Spike.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="Game\Enemies\BurstSpirit.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="Game\Enemies\Golem.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="Game\Enemies\Phoenix.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="Classes\BurstSpirit.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="Classes\Camera.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="Classes\Collision.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="Classes\Enemy.h">

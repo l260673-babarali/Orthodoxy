@@ -82,6 +82,9 @@
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
     </Link>
+    <PostBuildEvent>
+      <Command>copy /Y "C:\Users\T14 GEN 4\Downloads\SFML-3.1.0-windows-vc17-64-bit\SFML-3.1.0\bin\*.dll" "$(OutDir)"</Command>
+    </PostBuildEvent>
     <Manifest>
       <EnableSegmentHeap>true</EnableSegmentHeap>
     </Manifest>
@@ -100,6 +103,9 @@
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
     </Link>
+    <PostBuildEvent>
+      <Command>copy /Y "C:\Users\T14 GEN 4\Downloads\SFML-3.1.0-windows-vc17-64-bit\SFML-3.1.0\bin\*.dll" "$(OutDir)"</Command>
+    </PostBuildEvent>
     <Manifest>
       <EnableSegmentHeap>true</EnableSegmentHeap>
     </Manifest>
@@ -111,14 +117,17 @@
       <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp17</LanguageStandard>
-      <AdditionalIncludeDirectories>$(ProjectDir)SFML-3.1.0 MSVC\include</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>C:\Users\T14 GEN 4\Downloads\SFML-3.1.0-windows-vc17-64-bit\SFML-3.1.0\include</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalLibraryDirectories>$(ProjectDir)SFML-3.1.0 MSVC\lib</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>C:\Users\T14 GEN 4\Downloads\SFML-3.1.0-windows-vc17-64-bit\SFML-3.1.0\lib</AdditionalLibraryDirectories>
       <AdditionalDependencies>$(CoreLibraryDependencies);%(AdditionalDependencies);sfml-graphics-d.lib;sfml-window-d.lib;sfml-system-d.lib;sfml-network-d.lib;sfml-audio-d.lib</AdditionalDependencies>
     </Link>
+    <PostBuildEvent>
+      <Command>copy /Y "C:\Users\T14 GEN 4\Downloads\SFML-3.1.0-windows-vc17-64-bit\SFML-3.1.0\bin\*.dll" "$(OutDir)"</Command>
+    </PostBuildEvent>
     <Manifest>
       <EnableSegmentHeap>true</EnableSegmentHeap>
     </Manifest>
@@ -132,14 +141,17 @@
       <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp17</LanguageStandard>
-      <AdditionalIncludeDirectories>$(ProjectDir)SFML-3.1.0 MSVC\include</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>C:\Users\T14 GEN 4\Downloads\SFML-3.1.0-windows-vc17-64-bit\SFML-3.1.0\include</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalLibraryDirectories>$(ProjectDir)SFML-3.1.0 MSVC\lib</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>C:\Users\T14 GEN 4\Downloads\SFML-3.1.0-windows-vc17-64-bit\SFML-3.1.0\lib</AdditionalLibraryDirectories>
       <AdditionalDependencies>$(CoreLibraryDependencies);%(AdditionalDependencies);sfml-graphics.lib;sfml-window.lib;sfml-system.lib;sfml-network.lib;sfml-audio.lib</AdditionalDependencies>
     </Link>
+    <PostBuildEvent>
+      <Command>copy /Y "C:\Users\T14 GEN 4\Downloads\SFML-3.1.0-windows-vc17-64-bit\SFML-3.1.0\bin\*.dll" "$(OutDir)"</Command>
+    </PostBuildEvent>
     <Manifest>
       <EnableSegmentHeap>true</EnableSegmentHeap>
     </Manifest>
@@ -148,7 +160,6 @@
     <ClCompile Include="main.cpp" />
     <ClCompile Include="Source Files\BurstSpirit.cpp" />
     <ClCompile Include="Source Files\Camera.cpp" />
-    <ClCompile Include="Source Files\Collision.cpp" />
     <ClCompile Include="Source Files\Enemy.cpp" />
     <ClCompile Include="Source Files\Engine.cpp" />
     <ClCompile Include="Source Files\Golem.cpp" />
@@ -161,7 +172,6 @@
   <ItemGroup>
     <ClInclude Include="Classes\BurstSpirit.h" />
     <ClInclude Include="Classes\Camera.h" />
-    <ClInclude Include="Classes\Collision.h" />
     <ClInclude Include="Classes\Enemy.h" />
     <ClInclude Include="Classes\Engine.h" />
     <ClInclude Include="Classes\Golem.h" />
