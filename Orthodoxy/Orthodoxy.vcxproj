@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup Label="ProjectConfigurations">
     <ProjectConfiguration Include="Debug|Win32">
@@ -83,7 +83,7 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
     </Link>
     <PostBuildEvent>
-      <Command>copy /Y "C:\Users\T14 GEN 4\Downloads\SFML-3.1.0-windows-vc17-64-bit\SFML-3.1.0\bin\*.dll" "$(OutDir)"</Command>
+      <Command>copy /Y "$(ProjectDir)SFML-3.1.0 MSVC\bin\*.dll" "$(OutDir)"</Command>
     </PostBuildEvent>
     <Manifest>
       <EnableSegmentHeap>true</EnableSegmentHeap>
@@ -104,7 +104,7 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
     </Link>
     <PostBuildEvent>
-      <Command>copy /Y "C:\Users\T14 GEN 4\Downloads\SFML-3.1.0-windows-vc17-64-bit\SFML-3.1.0\bin\*.dll" "$(OutDir)"</Command>
+      <Command>copy /Y "$(ProjectDir)SFML-3.1.0 MSVC\bin\*.dll" "$(OutDir)"</Command>
     </PostBuildEvent>
     <Manifest>
       <EnableSegmentHeap>true</EnableSegmentHeap>
@@ -117,16 +117,18 @@
       <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp17</LanguageStandard>
-      <AdditionalIncludeDirectories>C:\Users\T14 GEN 4\Downloads\SFML-3.1.0-windows-vc17-64-bit\SFML-3.1.0\include</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)SFML-3.1.0 MSVC\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalLibraryDirectories>C:\Users\T14 GEN 4\Downloads\SFML-3.1.0-windows-vc17-64-bit\SFML-3.1.0\lib</AdditionalLibraryDirectories>
-      <AdditionalDependencies>$(CoreLibraryDependencies);%(AdditionalDependencies);sfml-graphics-d.lib;sfml-window-d.lib;sfml-system-d.lib;sfml-network-d.lib;sfml-audio-d.lib</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(ProjectDir)SFML-3.1.0 MSVC\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>$(CoreLibraryDependencies);sfml-graphics-d.lib
+;sfml-window-d.lib
+;sfml-system-d.lib;sfml-audio-d.lib</AdditionalDependencies>
     </Link>
     <PostBuildEvent>
-      <Command>copy /Y "C:\Users\T14 GEN 4\Downloads\SFML-3.1.0-windows-vc17-64-bit\SFML-3.1.0\bin\*.dll" "$(OutDir)"</Command>
+      <Command>copy /Y "$(ProjectDir)SFML-3.1.0 MSVC\bin\*.dll" "$(OutDir)"</Command>
     </PostBuildEvent>
     <Manifest>
       <EnableSegmentHeap>true</EnableSegmentHeap>
@@ -141,16 +143,18 @@
       <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp17</LanguageStandard>
-      <AdditionalIncludeDirectories>C:\Users\T14 GEN 4\Downloads\SFML-3.1.0-windows-vc17-64-bit\SFML-3.1.0\include</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)SFML-3.1.0 MSVC\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalLibraryDirectories>C:\Users\T14 GEN 4\Downloads\SFML-3.1.0-windows-vc17-64-bit\SFML-3.1.0\lib</AdditionalLibraryDirectories>
-      <AdditionalDependencies>$(CoreLibraryDependencies);%(AdditionalDependencies);sfml-graphics.lib;sfml-window.lib;sfml-system.lib;sfml-network.lib;sfml-audio.lib</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(ProjectDir)SFML-3.1.0 MSVC\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>$(CoreLibraryDependencies);sfml-graphics-d.lib
+;sfml-window-d.lib
+;sfml-system-d.lib;sfml-audio-d.lib</AdditionalDependencies>
     </Link>
     <PostBuildEvent>
-      <Command>copy /Y "C:\Users\T14 GEN 4\Downloads\SFML-3.1.0-windows-vc17-64-bit\SFML-3.1.0\bin\*.dll" "$(OutDir)"</Command>
+      <Command>copy /Y "$(ProjectDir)SFML-3.1.0 MSVC\bin\*.dll" "$(OutDir)"</Command>
     </PostBuildEvent>
     <Manifest>
       <EnableSegmentHeap>true</EnableSegmentHeap>
@@ -158,28 +162,29 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp" />
-    <ClCompile Include="Source Files\BurstSpirit.cpp" />
-    <ClCompile Include="Source Files\Camera.cpp" />
+
+<ClCompile Include="Source Files\Camera.cpp" />
     <ClCompile Include="Source Files\Enemy.cpp" />
     <ClCompile Include="Source Files\Engine.cpp" />
-    <ClCompile Include="Source Files\Golem.cpp" />
-    <ClCompile Include="Source Files\Level.cpp" />
-    <ClCompile Include="Source Files\Phoenix.cpp" />
-    <ClCompile Include="Source Files\Player.cpp" />
+
+<ClCompile Include="Source Files\Level.cpp" />
+
+<ClCompile Include="Source Files\Player.cpp" />
     <ClCompile Include="Source Files\Projectile.cpp" />
     <ClCompile Include="Source Files\Spike.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="Classes\BurstSpirit.h" />
-    <ClInclude Include="Classes\Camera.h" />
+
+<ClInclude Include="Classes\Camera.h" />
     <ClInclude Include="Classes\Enemy.h" />
     <ClInclude Include="Classes\Engine.h" />
-    <ClInclude Include="Classes\Golem.h" />
-    <ClInclude Include="Classes\Level.h" />
-    <ClInclude Include="Classes\Phoenix.h" />
-    <ClInclude Include="Classes\Player.h" />
+
+<ClInclude Include="Classes\Level.h" />
+
+<ClInclude Include="Classes\Player.h" />
     <ClInclude Include="Classes\Projectile.h" />
     <ClInclude Include="Classes\Spike.h" />
+    <ClInclude Include="Classes\GameplayExtras.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="SFML-3.1.0 MSVC\changelog.md" />
@@ -190,3 +195,4 @@
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>
 </Project>
+

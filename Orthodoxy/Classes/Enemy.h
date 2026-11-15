@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 #include <SFML/Graphics.hpp>
 #include <vector>
 #include <cmath>
@@ -53,3 +53,116 @@ public:
     sf::FloatRect getBounds() const;
     sf::Vector2f getCenter() const;
 };
+
+// Golem ka code ab Enemy.h mein hai.
+// Big slow enemy: throws rocks from far away and smashes the ground (spikes) up close
+class Golem : public Enemy
+{
+private:
+    enum class State { Idle, Walk, ThrowWindup, SmashWindup, Recover };
+    State state = State::Idle;
+    float state_timer = 0.f;            // how long we have been in the current state
+    float throw_cooldown = 1.f;         // seconds until the next rock throw is allowed
+    float smash_cooldown = 0.f;         // seconds until the next ground smash is allowed
+    bool last_attack_was_smash = false;   // decides which picture to show while recovering
+
+    static constexpr float walk_speed = 45.f;       // very slow
+    static constexpr float sight_range = 800.f;     // starts attacking from this far
+    static constexpr float throw_min_range = 260.f;  // throws rocks when the player is at least this far
+    static constexpr float smash_range = 180.f;     // smashes the floor when the player is this close
+
+    // ---- Graphics ----
+    sf::Texture texture;       // must come BEFORE the sprite
+    sf::Sprite sprite;
+    float anim_timer = 0.f;
+    static constexpr int cell_width = 260;              // one frame in golem_sheet.png
+    static constexpr int cell_height = 210;
+    static constexpr float feet_y = 204.f;          // where the feet touch the bottom of a frame
+    static constexpr float sprite_scale = 0.7f;
+
+    void throwRock(sf::Vector2f player_center, EnemyWorld& world);
+    void smashGround(EnemyWorld& world);
+    void updateAnimation();
+
+public:
+    Golem(float x, float y);
+    void update(float delta_time, const std::vector<sf::RectangleShape>& solids,
+        sf::Vector2f player_center, EnemyWorld& world) override;
+    void draw(sf::RenderWindow& window) override;
+};
+
+// BurstSpirit ka code ab Enemy.h mein hai.
+// A floating spirit that chases the player and explodes if the player stands still near it
+class BurstSpirit : public Enemy
+{
+private:
+    enum class State { Chase, Fuse, Exploding };
+    State state = State::Chase;
+    float state_timer = 0.f;     // how long we have been in the current state
+    float bob_timer = 0.f;       // drives the up/down floating
+    bool noticed = false;       // becomes true once the player gets close enough to be seen
+
+    // Used to find out if the player stopped moving
+    sf::Vector2f last_player_center;
+    bool has_last_player_pos = false;
+    float still_timer = 0.f;     // how long the player has been standing still
+
+    static constexpr float chase_speed = 150.f;       // player walks at 200, so you can outrun it
+    static constexpr float sight_range = 600.f;
+    static constexpr float trigger_range = 130.f;     // must be this close to start the countdown
+    static constexpr float still_time_needed = 0.5f;   // player must stand still this long
+    static constexpr float fuse_time = 0.6f;          // flashing before the boom
+    static constexpr float explosion_time = 0.2f;
+    static constexpr float explosion_radius = 110.f;
+
+public:
+    BurstSpirit(float x, float y);
+
+    void update(float delta_time, const std::vector<sf::RectangleShape>& solids,
+        sf::Vector2f player_center, EnemyWorld& world) override;
+    void takeDamage(int amount, int strike_id, float from_direction) override;
+    bool hurtsOnContact() const override { return false; }
+    bool getAttackHitbox(sf::FloatRect& box) const override;
+};
+
+// Phoenix ka code ab Enemy.h mein hai.
+// Flying enemy: hovers near the player, then breathes fire (far) or swoops with claws (close)
+class Phoenix : public Enemy
+{
+private:
+    enum class State { Hover, BreathWindup, Breathing, ClawWindup, ClawStrike, Recover, Dying };
+    State state = State::Hover;
+    float state_timer = 0.f;        // how long we have been in the current state
+    float attack_cooldown = 1.5f;   // seconds until the next attack
+    float breath_shot_timer = 0.f;   // countdown between two fireballs
+    float breath_angle = 0.f;       // direction of the fire (picked once, when the breath starts)
+    sf::Vector2f lunge_dir = { 1.f, 0.f };   // direction of the claw swoop
+
+    static constexpr float hover_speed = 170.f;
+    static constexpr float hover_distance = 300.f;  // how far away it likes to stay
+    static constexpr float hover_height = 130.f;    // how high above the player
+    static constexpr float claw_range = 220.f;      // closer than this = claws
+    static constexpr float claw_lunge_speed = 420.f;
+    static constexpr float dying_time = 0.8f;       // length of the death animation
+
+    // ---- Graphics ----
+    sf::Texture texture;       // must come BEFORE the sprite
+    sf::Sprite sprite;
+    float anim_timer = 0.f;
+    static constexpr int frame_width = 140;             // one frame in the sheet
+    static constexpr int frame_height = 139;
+    static constexpr float sprite_scale = 0.7f;
+
+    void hoverNear(sf::Vector2f player_center, float delta_time);
+    void updateAnimation();
+
+public:
+    Phoenix(float x, float y);
+    void update(float delta_time, const std::vector<sf::RectangleShape>& solids,
+        sf::Vector2f player_center, EnemyWorld& world) override;
+    void draw(sf::RenderWindow& window) override;
+    void takeDamage(int amount, int strike_id, float from_direction) override;
+    bool hurtsOnContact() const override { return false; }
+    bool getAttackHitbox(sf::FloatRect& box) const override;
+};
+

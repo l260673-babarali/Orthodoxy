@@ -1,4 +1,4 @@
-#include "../Classes/Player.h"
+﻿#include "../Classes/Player.h"
 #include<iostream>
 
 
@@ -10,13 +10,13 @@ Player::Player() : sprite(sheet_texture)
     shape.setPosition({ 100.f, 200.f });
 
     if (!sheet_texture.loadFromFile(
-        "Assets/Sprites/Player/knight_sheet.png"))
+        "Assets/Sprites/Player/ashen_knight_atlas.png"))
     {
         std::cout << "Could not load knight_sheet.png\n";
     }
 
     sprite.setTexture(sheet_texture);
-    sprite.setTextureRect(sf::IntRect({ 0, 0 }, { 60, 56 }));
+    sprite.setTextureRect(sf::IntRect({ 5, 3 }, { 470, 304 }));
 }
 
 
@@ -290,44 +290,43 @@ void Player::update(
     // ---- Animation: pick which picture from the sheet to show ----
     anim_timer += delta_time;
 
-    int row = 0;   // which animation (row of the sheet)
-    int col = 0;   // which picture of that animation (column)
-
+    int row = 0;
+    int col = 0;
     if (is_striking)
     {
-        row = 3;                                                   // sword attack
-        col = static_cast<int>(strike_timer / strike_duration * 10.f);
-        if (col > 9) col = 9;
+        row = 5;
+        col = int(strike_timer / strike_duration * 7.f);
+        if (col > 6) col = 6;
     }
     else if (is_dashing)
     {
-        row = 2;                                                   // dash = one running picture
-        col = 4;
+        row = 2;
+        col = int(anim_timer * 13.f) % 3;
     }
     else if (!is_on_ground)
     {
-        row = 6;                                                   // in the air
-        if (velocity_y < -100.f)     col = 1;                       // going up
-        else if (velocity_y > 100.f) col = 5;                       // falling
-        else                        col = 3;                       // top of the jump
+        row = 4;
+        if (velocity_y < -130.f) col = 0;
+        else if (velocity_y < 0.f) col = 1;
+        else if (velocity_y < 150.f) col = 2;
+        else col = 3;
     }
     else if (is_crouching)
     {
-        row = 6;                                                   // crouch
-        col = 8;
+        row = 3;
+        col = int(anim_timer * 7.f) % 6;
     }
     else if (input_dir != 0.f)
     {
-        row = 2;                                                   // running
-        col = static_cast<int>(anim_timer * 14.f) % 10;
+        row = 1;
+        col = int(anim_timer * 12.f) % 6;
     }
     else
     {
-        row = 0;                                                   // idle
-        col = static_cast<int>(anim_timer * 6.f) % 5;
+        row = 0;
+        col = 0;
     }
-
-    sprite.setTextureRect(sf::IntRect({ col * 60, row * 56 }, { 60, 56 }));
+    sprite.setTextureRect(sf::IntRect({ col * 480 + 5, row * 310 + 3 }, { 470, 304 }));
 
     // Died: respawn with full health
     if (health <= 0)
@@ -349,7 +348,7 @@ void Player::draw(sf::RenderWindow& window)
     {
         sf::FloatRect body_box = shape.getGlobalBounds();
 
-        sprite.setOrigin({ 30.f, 54.f });  // the knight's feet
+        sprite.setOrigin({ 155.f, 285.f });  // the knight's feet
         sprite.setScale({ sprite_scale * facing_direction, sprite_scale });
         // Feet at the bottom middle of the hitbox
         sprite.setPosition({ body_box.position.x + body_box.size.x / 2.f,
@@ -506,3 +505,6 @@ void Player::reset()
     is_dashing = is_striking = is_clinging = is_crouching = false;
     can_dash = true;
 }
+
+
+

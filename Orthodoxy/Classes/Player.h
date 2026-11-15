@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 #include <SFML/Graphics.hpp>
 #include <vector>
 #include <string>
@@ -78,7 +78,7 @@ private:
     sf::Texture sheet_texture;   // must come BEFORE the sprite
     sf::Sprite sprite;
     float anim_timer = 0.f;
-    float sprite_scale = 2.0f;
+    float sprite_scale = 0.53f;
 
 public:
     Player();
@@ -104,3 +104,6 @@ public:
 
     void reset();   // put the player back at the start with full health
 };
+
+
+

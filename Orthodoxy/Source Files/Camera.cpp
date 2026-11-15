@@ -39,3 +39,9 @@ sf::Vector2f Camera::getCenter() const
 {
     return view.getCenter();
 }
+
+
+const sf::View& Camera::getView() const
+{
+    return view;
+}
