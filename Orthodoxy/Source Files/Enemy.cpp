@@ -688,3 +688,167 @@ bool Phoenix::getAttackHitbox(sf::FloatRect& box) const
     return true;
 }
 
+
+// ===========================================================================
+// Skeleton
+// ===========================================================================
+namespace
+{
+    const sf::Color skeleton_bone(225, 220, 195);
+}
+
+Skeleton::Skeleton(float x, float y)
+    : Enemy({ x, y }, { 44.f, 84.f }, skeleton_bone, 3)
+{
+    knockback_speed = 150.f;
+}
+
+void Skeleton::update(float delta_time, const std::vector<sf::RectangleShape>& solids,
+    sf::Vector2f player_center, EnemyWorld&)
+{
+    if (!alive)
+        return;
+
+    updateHurtFlash(delta_time);
+    state_timer += delta_time;
+    if (slash_cooldown > 0.f) slash_cooldown -= delta_time;
+    if (leap_cooldown > 0.f) leap_cooldown -= delta_time;
+
+    moveHorizontal(consumeKnockback(delta_time), solids);
+
+    sf::Vector2f center = getCenter();
+    float dx = player_center.x - center.x;
+    float dy = player_center.y - center.y;
+    float dist = std::abs(dx);
+    bool on_floor = (velocity_y == 0.f);
+
+    switch (state)
+    {
+    case State::Idle:
+    case State::Walk:
+        base_color = skeleton_bone;
+        if (dist > sight_range)
+        {
+            state = State::Idle;
+            break;
+        }
+        facing = (dx >= 0.f) ? 1.f : -1.f;
+
+        if (dist <= slash_range && std::abs(dy) < 100.f && slash_cooldown <= 0.f)
+        {
+            // NEAR: slash
+            state = State::SlashWindup;
+            state_timer = 0.f;
+        }
+        else if (dist >= leap_min_range && dist <= leap_max_range
+            && leap_cooldown <= 0.f && on_floor)
+        {
+            // FAR: jump attack
+            state = State::LeapWindup;
+            state_timer = 0.f;
+        }
+        else if (dist > slash_range * 0.8f)
+        {
+            state = State::Walk;
+            moveHorizontal(facing * walk_speed * delta_time, solids);
+        }
+        break;
+
+    case State::SlashWindup:
+        base_color = sf::Color(255, 230, 120);   // yellow = about to slash
+        if (state_timer >= slash_windup_time)
+        {
+            state = State::SlashStrike;
+            state_timer = 0.f;
+        }
+        break;
+
+    case State::SlashStrike:
+        base_color = sf::Color(255, 150, 80);
+        if (state_timer >= slash_active_time)
+        {
+            slash_cooldown = 1.2f;
+            state = State::Recover;
+            state_timer = 0.f;
+        }
+        break;
+
+    case State::LeapWindup:
+        base_color = sf::Color(140, 200, 255);   // blue = about to jump
+        facing = (dx >= 0.f) ? 1.f : -1.f;
+        if (state_timer >= leap_windup_time)
+        {
+            // Aim at where the player is right now. If the player moves, the jump misses.
+            float flight_time = 2.f * leap_jump_speed / 981.f;
+            leap_speed_x = std::clamp(dx / flight_time, -leap_max_speed_x, leap_max_speed_x);
+            facing = (leap_speed_x >= 0.f) ? 1.f : -1.f;
+            velocity_y = -leap_jump_speed;
+            state = State::Leap;
+            state_timer = 0.f;
+        }
+        break;
+
+    case State::Leap:
+        base_color = sf::Color(255, 150, 80);
+        if (moveHorizontal(leap_speed_x * delta_time, solids))
+            leap_speed_x = 0.f;   // hit a wall: drop straight down
+        break;
+
+    case State::Recover:
+        base_color = skeleton_bone;
+        if (state_timer >= recover_time)
+        {
+            state = State::Idle;
+            state_timer = 0.f;
+        }
+        break;
+    }
+
+    applyGravity(delta_time, solids);
+
+    // Landed after the jump
+    if (state == State::Leap && state_timer > 0.15f && velocity_y == 0.f)
+    {
+        leap_cooldown = 2.f;
+        state = State::Recover;
+        state_timer = 0.f;
+    }
+}
+
+// The box body plus a little dark square on the side it is facing (so we can see where it looks)
+void Skeleton::draw(sf::RenderWindow& window)
+{
+    if (!alive)
+        return;
+
+    Enemy::draw(window);
+
+    sf::RectangleShape eye({ 10.f, 10.f });
+    float eye_x = (facing > 0.f) ? shape.getPosition().x + shape.getSize().x - 14.f
+                                 : shape.getPosition().x + 4.f;
+    eye.setPosition({ eye_x, shape.getPosition().y + 14.f });
+    eye.setFillColor(sf::Color(40, 0, 0));
+    window.draw(eye);
+}
+
+// Slash: a box in front of the skeleton. Jump: the whole body (a bit bigger) hurts while flying.
+bool Skeleton::getAttackHitbox(sf::FloatRect& box) const
+{
+    sf::Vector2f pos = shape.getPosition();
+    sf::Vector2f size = shape.getSize();
+
+    if (state == State::SlashStrike)
+    {
+        const float w = 80.f;
+        const float h = 60.f;
+        float x = (facing > 0.f) ? pos.x + size.x : pos.x - w;
+        box = sf::FloatRect({ x, pos.y + 10.f }, { w, h });
+        return true;
+    }
+    if (state == State::Leap)
+    {
+        box = sf::FloatRect({ pos.x - 10.f, pos.y - 5.f }, { size.x + 20.f, size.y + 10.f });
+        return true;
+    }
+    return false;
+}

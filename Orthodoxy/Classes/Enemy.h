@@ -166,3 +166,36 @@ public:
     bool getAttackHitbox(sf::FloatRect& box) const override;
 };
 
+// A simple skeleton (placeholder box for now, sprites come later).
+// Close to the player: slashes with its weapon. Far from the player: does a quick jump attack.
+class Skeleton : public Enemy
+{
+private:
+    enum class State { Idle, Walk, SlashWindup, SlashStrike, LeapWindup, Leap, Recover };
+    State state = State::Idle;
+    float state_timer = 0.f;        // how long we have been in the current state
+    float slash_cooldown = 0.5f;    // seconds until the next slash is allowed
+    float leap_cooldown = 1.f;      // seconds until the next jump attack is allowed
+    float leap_speed_x = 0.f;       // sideways speed chosen when the jump starts
+
+    static constexpr float walk_speed = 70.f;
+    static constexpr float sight_range = 700.f;       // notices the player from this far
+    static constexpr float slash_range = 110.f;       // closer than this = slash
+    static constexpr float leap_min_range = 180.f;    // farther than this = jump attack
+    static constexpr float leap_max_range = 520.f;
+    static constexpr float slash_windup_time = 0.45f; // warning before the slash (dash through it!)
+    static constexpr float slash_active_time = 0.15f; // how long the slash can hurt
+    static constexpr float leap_windup_time = 0.30f;  // crouch before the jump
+    static constexpr float leap_jump_speed = 380.f;   // upward speed of the jump
+    static constexpr float leap_max_speed_x = 500.f;
+    static constexpr float recover_time = 0.6f;
+
+public:
+    Skeleton(float x, float y);
+
+    void update(float delta_time, const std::vector<sf::RectangleShape>& solids,
+        sf::Vector2f player_center, EnemyWorld& world) override;
+    void draw(sf::RenderWindow& window) override;
+    bool hurtsOnContact() const override { return false; }
+    bool getAttackHitbox(sf::FloatRect& box) const override;
+};
