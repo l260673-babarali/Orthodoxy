@@ -3,6 +3,7 @@
 #include <SFML/Audio.hpp>
 #include <cmath>
 #include <iostream>
+#include "Level.h"
 
 // Portal aur fire effects isi file mein rahenge.
 namespace Extras
@@ -39,6 +40,8 @@ namespace Extras
             enterSound.setVolume(55.f);
     }
 
+    // Position of the gate picture in Ashen Barrow (region 0). The "Press E" area of every
+    // region lives in Level::getDoorTrigger().
     float doorX()
     {
         return 6284.f;
@@ -49,21 +52,13 @@ namespace Extras
         return 10.f;
     }
 
-    bool nearDoor(sf::Vector2f player, bool cathedral)
+    bool nearDoor(sf::Vector2f player, const Level& level)
     {
-        if (cathedral)
+        if (!level.hasDoor())
             return false;
 
-        float x = doorX();
-        float y = doorY();
-
         // Player gate ke paas ho to E ka message dikhao.
-        if (player.x > x - 100.f && player.x < x + 250.f)
-        {
-            if (player.y > y - 100.f && player.y < y + 900.f)
-                return true;
-        }
-        return false;
+        return level.getDoorTrigger().contains(player);
     }
 
     void updateSound(bool near)
@@ -102,32 +97,46 @@ namespace Extras
         window.draw(sprite);
     }
 
-    void draw(sf::RenderWindow& window, float worldWidth, bool cathedral, bool near, sf::Font& font, bool fontLoaded)
+    void draw(sf::RenderWindow& window, const Level& level, bool near, sf::Font& font, bool fontLoaded)
     {
-        if (cathedral) return;
+        if (!level.hasDoor()) return;
         float x = doorX();
         float y = doorY();
+        sf::Vector2f promptPosition;
 
-        // Background mein flames
-        drawFire(window, 1505.f, 810.f, 3, 0.60f);
-        drawFire(window, 2545.f, 872.f, 3, 0.60f);
-        drawFire(window, 2976.f, 513.f, 3, 0.25f);
-        drawFire(window, 3232.f, 513.f, 3, 0.25f);
-        drawFire(window, 4700.f, 565.f, 3, 0.60f);
-        drawFire(window, 7145.f, 498.f, 3, 0.60f);
-        drawFire(window, 7820.f, 540.f, 3, 0.60f);
-
-        if (doorTexture.getSize().x != 0)
+        if (level.getRegion() == Region::AshenBarrow)
         {
-            sf::Sprite gate(doorTexture);
-            gate.setScale({ 1.3f, 1.3f });
-            gate.setPosition({ x, y });
-            window.draw(gate);
-        }
+            // Background mein flames
+            drawFire(window, 1505.f, 810.f, 3, 0.60f);
+            drawFire(window, 2545.f, 872.f, 3, 0.60f);
+            drawFire(window, 2976.f, 513.f, 3, 0.25f);
+            drawFire(window, 3232.f, 513.f, 3, 0.25f);
+            drawFire(window, 4700.f, 565.f, 3, 0.60f);
+            drawFire(window, 7145.f, 498.f, 3, 0.60f);
+            drawFire(window, 7820.f, 540.f, 3, 0.60f);
 
-        // Gate ki dono taraf flames.
-        drawFire(window, x + 25.f, y + 190.f, 3, 0.40f);
-        drawFire(window, x + 168.f, y + 190.f, 3, 0.40f);
+            if (doorTexture.getSize().x != 0)
+            {
+                sf::Sprite gate(doorTexture);
+                gate.setScale({ 1.3f, 1.3f });
+                gate.setPosition({ x, y });
+                window.draw(gate);
+            }
+
+            // Gate ki dono taraf flames.
+            drawFire(window, x + 25.f, y + 190.f, 3, 0.40f);
+            drawFire(window, x + 168.f, y + 190.f, 3, 0.40f);
+
+            // Door bahut oopar hai; message visible rakhte hain.
+            promptPosition = { x - 10.f, y + 440.f };
+        }
+        else
+        {
+            // Red Moon Ruins: the portal is already painted in scene7,
+            // so we only show the message above it.
+            sf::FloatRect trigger = level.getDoorTrigger();
+            promptPosition = { trigger.position.x + 10.f, trigger.position.y - 30.f };
+        }
 
         if (near && fontLoaded)
         {
@@ -135,8 +144,7 @@ namespace Extras
             prompt.setFillColor(sf::Color(255, 225, 145));
             prompt.setOutlineColor(sf::Color::Black);
             prompt.setOutlineThickness(2.f);
-            // Door bahut oopar hai; message visible rakhte hain.
-            prompt.setPosition({ x - 10.f, y + 440.f });
+            prompt.setPosition(promptPosition);
             window.draw(prompt);
         }
     }
