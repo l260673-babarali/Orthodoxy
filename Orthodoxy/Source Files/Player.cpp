@@ -331,7 +331,7 @@ void Player::update(
     // Died: respawn with full health
     if (health <= 0)
     {
-        shape.setPosition({ 100.f, 100.f });
+        shape.setPosition(spawn_point);
         velocity_y = 0.f;
         health = max_health;
         invincible_timer = 1.5f;
@@ -353,6 +353,8 @@ void Player::draw(sf::RenderWindow& window)
         // Feet at the bottom middle of the hitbox
         sprite.setPosition({ body_box.position.x + body_box.size.x / 2.f,
                              body_box.position.y + body_box.size.y });
+        // See-through while dashing so you can tell the dodge is active
+        sprite.setColor(is_dashing ? sf::Color(255, 255, 255, 120) : sf::Color::White);
         window.draw(sprite);
     }
 
@@ -433,6 +435,9 @@ int Player::getStrikeId() const
 
 void Player::takeDamage(int amount, float from_direction)
 {
+    if (is_dashing)
+        return;   // DODGE: attacks pass through the knight while he dashes
+
     if (invincible_timer > 0.f)
         return;   // can't be hurt again right after a hit
 
@@ -454,6 +459,7 @@ void Player::takeDamage(int amount, float from_direction)
 sf::FloatRect Player::getBounds() const { return shape.getGlobalBounds(); }
 float Player::getFacing() const { return facing_direction; }
 int Player::getHealth() const { return health; }
+bool Player::isDodging() const { return is_dashing; }
 int Player::getMaxHealth() const { return max_health; }
 
 // Checks for a tall wall touching the left or right side of the knight
@@ -494,10 +500,11 @@ bool Player::canStandUp(const std::vector<sf::RectangleShape>& solids) const
 }
 
 // Put the knight back at the start with full health (used when a new game begins)
-void Player::reset()
+void Player::reset(sf::Vector2f spawn)
 {
+    spawn_point = spawn;
     shape.setSize({ hitbox_width, stand_height });
-    shape.setPosition({ 100.f, 200.f });
+    shape.setPosition(spawn);
     velocity_y = 0.f;
     health = max_health;
     invincible_timer = 0.f;

@@ -20,19 +20,107 @@ Engine::Engine()
 
 void Engine::startGame()
 {
+    blinking = false;
     level.reset();
+    enterRegion(Region::AshenBarrow);
+    state = GameState::Playing;
+}
 
+// Enemies for whichever region is loaded right now
+void Engine::spawnEnemies()
+{
     enemies.clear();
     projectiles.clear();
     spikes.clear();
 
-    enemies.push_back(std::make_unique<Golem>(1000.f, 430.f));
-    enemies.push_back(std::make_unique<BurstSpirit>(1450.f, 380.f));
-    enemies.push_back(std::make_unique<BurstSpirit>(1650.f, 360.f));
-    enemies.push_back(std::make_unique<Phoenix>(1950.f, 250.f));
+    if (level.getRegion() == Region::AshenBarrow)
+    {
+        enemies.push_back(std::make_unique<Golem>(1000.f, 430.f));
+        enemies.push_back(std::make_unique<BurstSpirit>(1450.f, 380.f));
+        enemies.push_back(std::make_unique<BurstSpirit>(1650.f, 360.f));
+        enemies.push_back(std::make_unique<Phoenix>(1950.f, 250.f));
+        enemies.push_back(std::make_unique<Skeleton>(2700.f, 780.f));            // falls onto the long floor
+    }
+    else if (level.getRegion() == Region::RedMoonRuins)
+    {
+        // Positions are in world coordinates (scene5 starts at x=0, scene6 at 1940, scene7 at 3880)
+        enemies.push_back(std::make_unique<Golem>(900.f, 885.f));                 // scene5, bottom middle ground
+        enemies.push_back(std::make_unique<BurstSpirit>(1700.f, 700.f));          // scene5, right side
+        enemies.push_back(std::make_unique<BurstSpirit>(2700.f, 650.f));          // scene6
+        enemies.push_back(std::make_unique<Phoenix>(3300.f, 400.f));              // scene6, flying
+        enemies.push_back(std::make_unique<Golem>(4780.f, 825.f));                // scene7, bottom middle ground
+        enemies.push_back(std::make_unique<Skeleton>(550.f, 780.f));              // scene5, left floor
+        enemies.push_back(std::make_unique<Skeleton>(2900.f, 840.f));             // scene6, ground
+    }
+    // The cathedral has no enemies yet
+}
 
-    player.reset();
-    state = GameState::Playing;
+// Load a region: build its level, add its enemies, put the player at its start
+void Engine::enterRegion(Region region)
+{
+    level.setRegion(region);
+    spawnEnemies();
+    player.reset(level.getSpawn());
+    camera.follow(player.getCenter(), level.getWidth(), level.getTop(), level.getHeight());
+}
+
+// ---- Blink transition ----
+void Engine::startBlink(Region target)
+{
+    blinking = true;
+    blinkSwitched = false;
+    blinkTimer = 0.f;
+    blinkTarget = target;
+}
+
+void Engine::updateBlink(float deltaTime)
+{
+    blinkTimer += deltaTime;
+
+    // Eyes are fully closed: change the region now, the player can't see it happen
+    if (!blinkSwitched && blinkTimer >= blinkCloseTime)
+    {
+        blinkSwitched = true;
+        enterRegion(blinkTarget);
+    }
+
+    if (blinkTimer >= blinkCloseTime + blinkHoldTime + blinkOpenTime)
+        blinking = false;
+}
+
+// Two black eyelids: one comes down from the top, one up from the bottom
+void Engine::drawBlink()
+{
+    if (!blinking)
+        return;
+
+    float amount;   // 0 = eyes open, 1 = eyes closed
+    if (blinkTimer < blinkCloseTime)
+    {
+        amount = blinkTimer / blinkCloseTime;
+    }
+    else if (blinkTimer < blinkCloseTime + blinkHoldTime)
+    {
+        amount = 1.f;
+    }
+    else
+    {
+        amount = 1.f - (blinkTimer - blinkCloseTime - blinkHoldTime) / blinkOpenTime;
+    }
+    amount = std::clamp(amount, 0.f, 1.f);
+    amount = amount * amount * (3.f - 2.f * amount);   // smooth start and end
+
+    window.setView(window.getDefaultView());
+
+    float lidHeight = 300.f * amount;
+    sf::RectangleShape topLid({ 800.f, lidHeight });
+    topLid.setFillColor(sf::Color::Black);
+    window.draw(topLid);
+
+    sf::RectangleShape bottomLid({ 800.f, lidHeight });
+    bottomLid.setPosition({ 0.f, 600.f - lidHeight });
+    bottomLid.setFillColor(sf::Color::Black);
+    window.draw(bottomLid);
 }
 
 std::vector<std::string> Engine::menuItems() const
@@ -73,16 +161,12 @@ void Engine::handleKey(sf::Keyboard::Key key)
 
     if (state == GameState::Playing)
     {
-        if (key == K::E && Extras::nearDoor(player.getCenter(), level.isCathedral()))
+        // Press E at a portal: blink, then the next region loads
+        if (key == K::E && !blinking && Extras::nearDoor(player.getCenter(), level))
         {
             Extras::enter();
-            player.reset();
-            enemies.clear();
-            projectiles.clear();
-            spikes.clear();
+            startBlink(level.getNextRegion());
         }
-        // Press E near the end of Ashen Barrow to enter the cathedral.
-        
 
         if (key == K::Escape)
         {
@@ -195,8 +279,15 @@ void Engine::update()
     if (delta_time > 0.05f)
         delta_time = 0.05f;
 
+    // While the eyes are blinking the world is frozen
+    if (blinking)
+    {
+        updateBlink(delta_time);
+        return;
+    }
+
     player.update(delta_time, level.getPlatforms(), level.getWidth());
-    Extras::updateSound(Extras::nearDoor(player.getCenter(), level.isCathedral()));
+    Extras::updateSound(Extras::nearDoor(player.getCenter(), level));
 
     EnemyWorld world{ projectiles, spikes };
 
@@ -232,7 +323,9 @@ void Engine::update()
     for (auto& projectile : projectiles)
     {
         projectile.update(delta_time, level.getPlatforms());
-        if (projectile.isAlive() && projectile.getBounds().findIntersection(player.getBounds()))
+        // While dodging, rocks and fireballs fly straight through the knight
+        if (projectile.isAlive() && !player.isDodging()
+            && projectile.getBounds().findIntersection(player.getBounds()))
         {
             float push_dir = (player.getCenter().x < projectile.getCenter().x) ? -1.f : 1.f;
             player.takeDamage(projectile.getDamage(), push_dir);
@@ -301,8 +394,7 @@ void Engine::render()
     camera.apply(window);
 
     level.draw(window);
-    Extras::draw(window, level.getWidth(), level.isCathedral(),
-        Extras::nearDoor(player.getCenter(), level.isCathedral()),
+    Extras::draw(window, level, !blinking && Extras::nearDoor(player.getCenter(), level),
         font, font_loaded);
 
     for (auto& spike : spikes)
@@ -316,6 +408,7 @@ void Engine::render()
 
     player.draw(window);
     drawHUD();
+    drawBlink();
 
     if (state == GameState::Paused)
         drawMenu("PAUSED");

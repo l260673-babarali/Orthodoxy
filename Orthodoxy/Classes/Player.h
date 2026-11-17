@@ -80,6 +80,8 @@ private:
     float anim_timer = 0.f;
     float sprite_scale = 0.53f;
 
+    sf::Vector2f spawn_point = { 100.f, 200.f };   // where we start / respawn
+
 public:
     Player();
 
@@ -101,8 +103,11 @@ public:
     float getFacing() const;
     int getHealth() const;
     int getMaxHealth() const;
+    // True while dashing: the dash is a dodge, so nothing can hurt the knight during it
+    bool isDodging() const;
 
-    void reset();   // put the player back at the start with full health
+    // Put the player at the start spot with full health. The spot is also where he respawns after dying.
+    void reset(sf::Vector2f spawn = { 100.f, 200.f });
 };
 
 
