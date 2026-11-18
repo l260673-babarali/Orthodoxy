@@ -3,12 +3,14 @@
 #include <string>
 
 const float OLD_SCALE = 1.5f;
+// Ek purane scene ki world width = image width (543) x scaling factor.
 const float OLD_SCENE = 543.f * OLD_SCALE;
 const float SCENE_WIDTH = 1360.f; // cathedral scene width
 const float CONTINUATION_WIDTH = 1086.f;
 const float HEIGHT = 1086.f;
 const float EXTERIOR_WIDTH = 2172.f * OLD_SCALE + 3.f * CONTINUATION_WIDTH;
 const float RUINS_SCENE_WIDTH = 1940.f; // each red-moon-ruins picture (scene5, 6, 7) is stretched to this width
+// Red Moon total width = 3 scene widths; 3 backgrounds side by side hain.
 const float RUINS_WIDTH = 3.f * RUINS_SCENE_WIDTH;
 
 void Level::addSolid(float x, float y, float width, float height)
@@ -68,6 +70,7 @@ void Level::setRegion(Region newRegion)
     else                                     buildCathedral();
 }
 
+// Ashen platforms ke addSolid(x,y,width,height) world coordinates hain; OLD_SCALE x position, y aur width ko same proportion se barhata hai. Values ko change nahi kiya.
 void Level::buildAshenBarrow()
 {
     // Original Ashen Barrow platforms: preserved.
@@ -122,6 +125,7 @@ void Level::buildAshenBarrow()
 // Level::draw (it is on by default) and click in the game to print the real
 // coordinates, then nudge any platform that is a few pixels off.
 // ---------------------------------------------------------------------------
+// Red Moon addSolid mein local scene X + sceneIndex x RUINS_SCENE_WIDTH = world X. Platform values ko change nahi kiya.
 void Level::buildRedMoonRuins()
 {
     // ----- scene5 (first picture) -----
@@ -201,10 +205,12 @@ void Level::buildRedMoonRuins()
     addSolid(0.f, 1070.f, RUINS_WIDTH, 16.f);
 }
 
+// Cathedral mein har scene ka starting X = scene index x SCENE_WIDTH; us par platform ka local X add hota hai.
 void Level::buildCathedral()
 {
     for (int i = 0; i < 3; i++)
     {
+        // Cathedral image ka starting X = scene index x width.
         float x = i * SCENE_WIDTH;
         addSolid(x, 900.f, SCENE_WIDTH, 40.f);
         addSolid(x + 160.f, 750.f, 250.f, 16.f);
@@ -257,7 +263,9 @@ void Level::draw(sf::RenderWindow& window)
         for (int i = 0; i < 3; i++)
         {
             sf::Sprite s(pictures[i + 4]);
+            // Continuation background ka world start = pehle four scenes ki total scaled width + continuation index x width.
             s.setPosition({2172.f * OLD_SCALE + i * CONTINUATION_WIDTH, 0.f});
+            // Background scale X = desired world width / original texture width; Y = world height / texture height.
             s.setScale({CONTINUATION_WIDTH / s.getTexture().getSize().x, HEIGHT / s.getTexture().getSize().y});
             window.draw(s);
         }
@@ -267,6 +275,7 @@ void Level::draw(sf::RenderWindow& window)
         for (int i = 0; i < 3; i++)
         {
             sf::Sprite s(pictures[i + 10]);
+            // Red Moon image ka starting X = image index x ek scene ki world width.
             s.setPosition({i * RUINS_SCENE_WIDTH, 0.f});
             s.setScale({RUINS_SCENE_WIDTH / s.getTexture().getSize().x, HEIGHT / s.getTexture().getSize().y});
             window.draw(s);
@@ -283,7 +292,7 @@ void Level::draw(sf::RenderWindow& window)
         }
     }
     // Change this to true only when aligning collision rectangles.
-    bool showPlatforms = false;
+    bool showPlatforms = true;
     if (showPlatforms)
     {
         for (int i = 0; i < (int)platforms.size(); i++)

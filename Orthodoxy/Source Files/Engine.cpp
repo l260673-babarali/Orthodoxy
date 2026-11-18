@@ -35,12 +35,14 @@ namespace
         sf::Color color, bool centered = false)
     {
         sf::Text text(font, value, size);
+        text.setStyle(sf::Text::Bold);
         text.setFillColor(color);
         text.setOutlineColor(sf::Color(0, 0, 0, 140));
         text.setOutlineThickness(0.6f);
         if (centered)
         {
             sf::FloatRect bounds = text.getLocalBounds();
+            // Text ko center karne ke liye bounding box ka left + half width origin rakha hai.
             text.setOrigin({ bounds.position.x + bounds.size.x / 2.f, bounds.position.y });
         }
         text.setPosition({ x, y });
@@ -58,10 +60,17 @@ namespace
     std::string stageClock(float seconds)
     {
         int elapsed = static_cast<int>(seconds);
+        // Elapsed seconds / 60 se complete minutes milte hain (integer division).
         int minutes = elapsed / 60;
+        // %60 se minutes ke baad bache hue seconds (0 se 59) milte hain.
         int remainder = elapsed % 60;
-        return std::to_string(minutes) + ":" +
-            (remainder < 10 ? "0" : "") + std::to_string(remainder);
+        std::string time = std::to_string(minutes) + ":";
+        if (remainder < 10)
+        {
+            time += "0";
+        }
+        time += std::to_string(remainder);
+        return time;
     }
 }
 
@@ -79,17 +88,22 @@ Engine::Engine()
     if (!health_empty_texture.loadFromFile("Assets/Sprites/Health/Empty.png"))
         std::cout << "Could not load Empty.png\n";
 
-    font_loaded = font.openFromFile("C:/Windows/Fonts/georgia.ttf")
-        || font.openFromFile("C:/Windows/Fonts/constan.ttf")
-        || font.openFromFile("Assets/Fonts/font.ttf")
-        || font.openFromFile("C:/Windows/Fonts/arial.ttf");
+    font_loaded = font.openFromFile("C:/Windows/Fonts/georgiab.ttf")
+        || font.openFromFile("C:/Windows/Fonts/cambriab.ttf")
+        || font.openFromFile("C:/Windows/Fonts/timesbd.ttf")
+        || font.openFromFile("C:/Windows/Fonts/arialbd.ttf")
+        || font.openFromFile("C:/Windows/Fonts/georgia.ttf");
     title_font_loaded = title_font.openFromFile("C:/Windows/Fonts/georgiab.ttf")
-        || title_font.openFromFile("C:/Windows/Fonts/georgia.ttf")
+        || title_font.openFromFile("C:/Windows/Fonts/cambriab.ttf")
+        || title_font.openFromFile("C:/Windows/Fonts/timesbd.ttf")
         || title_font.openFromFile("C:/Windows/Fonts/arialbd.ttf");
     if (!font_loaded)
         std::cout << "UI font could not be loaded!\n";
     if (!title_font_loaded)
         std::cout << "Title font could not be loaded!\n";
+    if (!scroll_texture.loadFromFile("Assets/Sprites/Items/holy_scroll.png"))
+        std::cout << "Could not load holy_scroll.png\n";
+    scroll_texture.setSmooth(false);
 }
 
 Engine::~Engine()
@@ -108,6 +122,14 @@ void Engine::startGame()
 {
     blinking = false;
     total_kills = 0;
+    scrolls = 0;
+    collected_total = 0;
+    for (int i = 0; i < 8; i++)
+    {
+        collected_scrolls[i] = false;
+    }
+    upgrade_index = 0;
+    player.resetStats();
     best_combo = 0;
     combo_hits = 0;
     combo_timer = 0.f;
@@ -192,6 +214,7 @@ void Engine::drawBlink()
     float amount;   // 0 = eyes open, 1 = eyes closed
     if (blinkTimer < blinkCloseTime)
     {
+        // Blink close progress = elapsed close time / total close duration; 0 se 1 tak jata hai.
         amount = blinkTimer / blinkCloseTime;
     }
     else if (blinkTimer < blinkCloseTime + blinkHoldTime)
@@ -200,13 +223,23 @@ void Engine::drawBlink()
     }
     else
     {
+        // Blink open progress = 1 - (open phase ka elapsed time / open duration); screen dheere clear hoti hai.
         amount = 1.f - (blinkTimer - blinkCloseTime - blinkHoldTime) / blinkOpenTime;
     }
-    amount = std::clamp(amount, 0.f, 1.f);
-    amount = amount * amount * (3.f - 2.f * amount);   // smooth start and end
+    if (amount < 0.f)
+    {
+        amount = 0.f;
+    }
+    if (amount > 1.f)
+    {
+        amount = 1.f;
+    }
+    // Smoothstep formula t*t*(3-2*t): blink ke start/end par motion smooth banati hai.
+    amount = amount * amount * (3.f - 2.f * amount);
 
     window.setView(ui_view);
 
+    // Blink ki half-screen height = 270 x progress; progress 1 par dono halves mil kar 540 cover karti hain.
     float lidHeight = 270.f * amount;
     sf::RectangleShape topLid({ 960.f, lidHeight });
     topLid.setFillColor(sf::Color::Black);
@@ -256,6 +289,12 @@ void Engine::handleKey(sf::Keyboard::Key key)
 
     if (state == GameState::Playing)
     {
+        if (key == K::U && !blinking)
+        {
+            state = GameState::Upgrades;
+            upgrade_index = 0;
+            return;
+        }
         // Show results before entering the next region.
         if (key == K::E && !blinking && Extras::nearDoor(player.getCenter(), level))
         {
@@ -283,9 +322,51 @@ void Engine::handleKey(sf::Keyboard::Key key)
         return;
     }
 
-    int count = (int)(menuItems().size());
-    if (key == K::W || key == K::Up)   menu_index = (menu_index + count - 1) % count;
-    if (key == K::S || key == K::Down) menu_index = (menu_index + 1) % count;
+    if (state == GameState::Upgrades)
+    {
+        if (key == K::Escape || key == K::U)
+            state = GameState::Playing;
+        else if (key == K::W || key == K::Up)
+        {
+            upgrade_index--;
+            if (upgrade_index < 0)
+            {
+                upgrade_index = 3;
+            }
+        }
+        else if (key == K::S || key == K::Down)
+        {
+            upgrade_index++;
+            if (upgrade_index > 3)
+            {
+                upgrade_index = 0;
+            }
+        }
+        else if ((key == K::Enter || key == K::Space) && scrolls > 0)
+        {
+            if (player.upgradeStat(upgrade_index))
+                --scrolls;
+        }
+        return;
+    }
+
+    int count = (int)menuItems().size();
+    if (key == K::W || key == K::Up)
+    {
+        menu_index--;
+        if (menu_index < 0)
+        {
+            menu_index = count - 1;
+        }
+    }
+    if (key == K::S || key == K::Down)
+    {
+        menu_index++;
+        if (menu_index >= count)
+        {
+            menu_index = 0;
+        }
+    }
     if (key == K::Enter || key == K::Space) activateMenuItem();
     if (key == K::Escape && state == GameState::Paused)
         state = GameState::Playing;
@@ -327,6 +408,7 @@ void Engine::drawMenu(const std::string& title)
     for (int i = 0; i < static_cast<int>(items.size()); ++i)
     {
         bool selected = i == menu_index;
+        // Menu row Y = first row 227 + row index x 49, is se options equal gap par hain.
         const float y = 227.f + i * 49.f;
         if (selected)
         {
@@ -413,15 +495,18 @@ void Engine::update()
         return;
     }
 
+    // Stage timer mein har frame ke actual seconds add hote hain; timer FPS se independent rehta hai.
     stage_seconds += delta_time;
     if (combo_timer > 0.f)
     {
+        // Combo ki remaining window har frame guzre hue seconds se ghatti hai.
         combo_timer -= delta_time;
         if (combo_timer <= 0.f)
             combo_hits = 0;
     }
 
     player.update(delta_time, level.getPlatforms(), level.getWidth());
+    collectScrolls();
     int health_before_combat = player.getHealth();
     Extras::updateSound(Extras::nearDoor(player.getCenter(), level));
 
@@ -437,7 +522,7 @@ void Engine::update()
             && player.getStrikeHitbox().findIntersection(enemy->getBounds())
             && enemy->getLastHitStrikeId() != player.getStrikeId())
         {
-            enemy->takeDamage(1, player.getStrikeId(), player.getFacing());
+            enemy->takeDamage(player.getSwordDamage(), player.getStrikeId(), player.getFacing());
             if (enemy->getLastHitStrikeId() == player.getStrikeId())
                 recordSwordHit();
         }
@@ -477,12 +562,13 @@ void Engine::update()
         if (spike.isDangerous() && spike.getBounds().findIntersection(player.getBounds()))
         {
             sf::FloatRect spike_box = spike.getBounds();
+            // Spike ka center X = spike left + half width; knockback direction isi se compare hoti hai.
             float push_dir = (player.getCenter().x < spike_box.position.x + spike_box.size.x / 2.f) ? -1.f : 1.f;
             player.takeDamage(1, push_dir);
         }
     }
 
-    for (int i = static_cast<int>(enemies.size()) - 1; i >= 0; i--)
+    for (int i = (int)enemies.size() - 1; i >= 0; i--)
     {
         if (!enemies[i]->isAlive())
         {
@@ -495,12 +581,12 @@ void Engine::update()
             enemies.erase(enemies.begin() + i);
         }
     }
-    for (int i = static_cast<int>(projectiles.size()) - 1; i >= 0; i--)
+    for (int i = (int)projectiles.size() - 1; i >= 0; i--)
     {
         if (!projectiles[i].isAlive())
             projectiles.erase(projectiles.begin() + i);
     }
-    for (int i = static_cast<int>(spikes.size()) - 1; i >= 0; i--)
+    for (int i = (int)spikes.size() - 1; i >= 0; i--)
     {
         if (!spikes[i].isAlive())
             spikes.erase(spikes.begin() + i);
@@ -528,7 +614,7 @@ std::string Engine::currentObjective() const
         return "Reach the gate to Red Moon Ruins";
     if (level.getRegion() == Region::RedMoonRuins)
         return "Find the portal to the Cathedral";
-    return "Explore the Cathedral"; // Boss objective comes in Phase 4
+    return "Explore the Cathedral";
 }
 
 void Engine::drawHUD()
@@ -541,29 +627,33 @@ void Engine::drawHUD()
     for (int i = 0; i < player.getMaxHealth(); ++i)
     {
         sf::Sprite heart(i < player.getHealth() ? health_full_texture : health_empty_texture);
+        // Har next heart ka X = first X 22 + index x 29, is liye equal spacing hoti hai.
         heart.setPosition({ 22.f + i * 29.f, 22.f });
         sf::Vector2u size = heart.getTexture().getSize();
         if (size.x > 0 && size.y > 0)
+            // Heart sprite scaling = desired display size / original texture dimensions; 25x25 dikhata hai.
             heart.setScale({ 25.f / size.x, 25.f / size.y });
         window.draw(heart);
     }
     if (!font_loaded)
         return;
 
-    uiText(window, font, "KILLS", 11, 22.f, 53.f, muted);
+    uiText(window, font, "KILLS", 13, 22.f, 53.f, muted);
     uiText(window, font, std::to_string(stage_kills) + " STAGE  /  " +
         std::to_string(total_kills) + " TOTAL", 15, 74.f, 50.f, gold);
     uiRule(window, 22.f, 76.f, 311.f);
-    uiText(window, font, currentObjective(), 12, 22.f, 81.f, parchment);
+    uiText(window, font, currentObjective(), 13, 22.f, 81.f, parchment);
 
-    uiText(window, font, "STAGE TIME", 11, 818.f, 20.f, muted);
+    uiText(window, font, "SCROLLS " + std::to_string(scrolls) + "   [U] UPGRADES",
+        13, 22.f, 116.f, gold);
+    uiText(window, font, "STAGE TIME", 13, 818.f, 20.f, muted);
     uiText(window, title_font_loaded ? title_font : font,
         stageClock(stage_seconds), 21, 818.f, 36.f, gold);
 
     if (combo_hits > 1)
     {
         uiPanel(window, 805.f, 80.f, 143.f, 54.f);
-        uiText(window, font, "BLADE COMBO", 11, 818.f, 89.f, muted);
+        uiText(window, font, "BLADE COMBO", 13, 818.f, 89.f, muted);
         uiText(window, title_font_loaded ? title_font : font,
             "x" + std::to_string(combo_hits), 22, 818.f, 106.f, gold);
     }
@@ -602,11 +692,101 @@ void Engine::drawStageCleared()
     uiText(window, headingFont, std::to_string(total_kills), 24,
         right, 314.f, parchment);
     uiRule(window, 270.f, 354.f, 420.f);
-    // Relics become collectible in Phase 2.
-    uiText(window, font, "RELICS COLLECTED  " + std::to_string(stage_relics) +
-        "   (Phase 2)", 13, 480.f, 367.f, muted, true);
+    uiText(window, font, "SCROLLS FOUND  " + std::to_string(stage_relics),
+        15, 480.f, 367.f, gold, true);
     uiText(window, font, "PRESS ENTER TO CONTINUE", 18, 480.f,
         416.f, gold, true);
+}
+
+void Engine::collectScrolls()
+{
+    sf::FloatRect knight = player.getBounds();
+    for (int i = 0; i < 8; ++i)
+    {
+        if (collected_scrolls[i]) continue;
+        if (i < 3 && level.getRegion() != Region::AshenBarrow) continue;
+        if (i >= 3 && i < 6 && level.getRegion() != Region::RedMoonRuins) continue;
+        if (i >= 6 && level.getRegion() != Region::Cathedral) continue;
+
+        sf::Vector2f pos = scroll_positions[i];
+        sf::FloatRect pickup({ pos.x - 25.f, pos.y - 24.f }, { 50.f, 48.f });
+        if (knight.findIntersection(pickup))
+        {
+            collected_scrolls[i] = true;
+            ++scrolls;
+            ++collected_total;
+            ++stage_relics;
+        }
+    }
+}
+
+void Engine::drawScrolls()
+{
+    for (int i = 0; i < 8; ++i)
+    {
+        if (collected_scrolls[i]) continue;
+        if (i < 3 && level.getRegion() != Region::AshenBarrow) continue;
+        if (i >= 3 && i < 6 && level.getRegion() != Region::RedMoonRuins) continue;
+        if (i >= 6 && level.getRegion() != Region::Cathedral) continue;
+
+        sf::Vector2f pos = scroll_positions[i];
+        sf::CircleShape glow(23.f);
+        glow.setOrigin({ 23.f, 23.f });
+        glow.setPosition(pos);
+        glow.setFillColor(sf::Color(195, 112, 39, 45));
+        window.draw(glow);
+
+        sf::Sprite sprite(scroll_texture);
+        sprite.setOrigin({ 72.f, 56.f });
+        sprite.setPosition(pos);
+        sprite.setScale({ 0.34f, 0.34f });
+        window.draw(sprite);
+    }
+}
+
+void Engine::drawUpgrades()
+{
+    window.setView(ui_view);
+    sf::RectangleShape overlay({ 960.f, 540.f });
+    overlay.setFillColor(sf::Color(8, 5, 12, 215));
+    window.draw(overlay);
+    if (!font_loaded) return;
+
+    const sf::Font& heading = title_font_loaded ? title_font : font;
+    uiPanel(window, 249.f, 56.f, 462.f, 432.f);
+    uiText(window, font, "ORTHODOXY - THE KNIGHT'S ASCENSION", 13,
+        480.f, 77.f, muted, true);
+    uiText(window, heading, "ASCENSION", 38, 480.f, 105.f, gold, true);
+    uiText(window, font, "SCROLLS AVAILABLE: " + std::to_string(scrolls),
+        17, 480.f, 162.f, parchment, true);
+    uiRule(window, 287.f, 197.f, 386.f);
+
+    const std::string names[4] = { "VITALITY", "STRENGTH", "ENDURANCE", "AGILITY" };
+    const std::string details[4] = {
+        "+1 maximum health", "+1 sword damage",
+        "Periodic damage block", "+12 movement speed, faster dash"
+    };
+    for (int i = 0; i < 4; ++i)
+    {
+        // Upgrade menu ki row Y = starting position 218 + index x 51; rows equal spacing par hain.
+        float y = 218.f + i * 51.f;
+        if (upgrade_index == i)
+        {
+            sf::RectangleShape selected({ 380.f, 47.f });
+            selected.setPosition({ 290.f, y - 2.f });
+            selected.setFillColor(sf::Color(91, 37, 44, 145));
+            selected.setOutlineColor(crimson);
+            selected.setOutlineThickness(1.f);
+            window.draw(selected);
+        }
+        uiText(window, heading, names[i], 18, 304.f, y,
+            upgrade_index == i ? gold : parchment);
+        uiText(window, font, details[i], 12, 304.f, y + 22.f, muted);
+        uiText(window, heading, std::to_string(player.getStat(i)) + "/5",
+            19, 624.f, y + 6.f, gold, true);
+    }
+    uiText(window, font, "W/S SELECT    ENTER UPGRADE    U/ESC CLOSE",
+        14, 480.f, 458.f, muted, true);
 }
 
 void Engine::render()
@@ -642,11 +822,14 @@ void Engine::render()
         projectile.draw(window);
 
     player.draw(window);
+    drawScrolls();
     drawHUD();
     drawBlink();
 
     if (state == GameState::Paused)
         drawMenu("PAUSED");
+    else if (state == GameState::Upgrades)
+        drawUpgrades();
 
     window.display();
 }

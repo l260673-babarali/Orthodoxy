@@ -1,4 +1,4 @@
-#include "../Classes/Projectile.h"
+﻿#include "../Classes/Projectile.h"
 #include <cmath>
 #include <iostream>
 
@@ -28,6 +28,7 @@ Projectile::Projectile(sf::Vector2f center, sf::Vector2f size, sf::Vector2f star
     is_rock(rock)
 {
     shape.setSize(size);
+    // Projectile ka origin uske center mein: width/2 aur height/2.
     shape.setOrigin(size / 2.f);   // position = the middle of the projectile
     shape.setPosition(center);
     shape.setFillColor(color);
@@ -39,7 +40,9 @@ void Projectile::update(float delta_time, const std::vector<sf::RectangleShape>&
         return;
 
     age += delta_time;
+    // Projectile Y speed ko g*dt se update karte hain; rock ka path dheere neeche bend hota hai.
     velocity.y += gravity * delta_time;   // gravity slowly bends the path downward
+    // Frame movement = 2D velocity x elapsed seconds; X aur Y dono directions mein move hota hai.
     shape.move(velocity * delta_time);
 
     lifetime -= delta_time;
@@ -70,8 +73,11 @@ void Projectile::draw(sf::RenderWindow& window)
     {
         // Rocks use the animated picture
         sf::Sprite sprite(texture);
-        int frame = static_cast<int>(age * 14.f) % rock_frames;   // 14 pictures per second
+        // Rock animation mein time x14 frame speed hai; % totalFrames loop repeat karta hai.
+        int frame = int(age * 14.f) % rock_frames;   // 14 pictures per second
+        // Sprite sheet mein crop X = frame index x ek frame ka size.
         sprite.setTextureRect(sf::IntRect({ frame * rock_cell, 0 }, { rock_cell, rock_cell }));
+        // Sprite image ko center se draw karne ke liye X,Y origin dono half cell hain.
         sprite.setOrigin({ rock_cell / 2.f, rock_cell / 2.f });
         sprite.setPosition(shape.getPosition());
 

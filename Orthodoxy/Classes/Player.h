@@ -1,4 +1,4 @@
-﻿#pragma once
+#pragma once
 #include <SFML/Graphics.hpp>
 #include <vector>
 #include <string>
@@ -34,6 +34,7 @@ private:
 
     // Strike
     bool  is_striking = false;
+    bool  is_heavy_striking = false;
     bool  strike_was_held = false;       // was the strike key down last frame? (to detect a fresh press)
     float strike_duration = 0.25f;      // whole animation length
     float strike_active_start = 0.06f;   // hitbox turns on
@@ -41,9 +42,25 @@ private:
     float strike_timer = 0.f;
     float strike_cooldown = 0.35f;
     float strike_cooldown_timer = 0.f;
-    float strike_range = 60.f;          // how far the hit reaches in front
+    float strike_range = 60.f;
     float strike_height = 50.f;
+
+    bool  heavy_was_held = false;
+    float heavy_duration = 0.50f;
+    float heavy_active_start = 0.16f;
+    float heavy_active_end = 0.36f;
+    float heavy_timer = 0.f;
+    float heavy_cooldown = 0.65f;
+    float heavy_cooldown_timer = 0.f;
+    float heavy_range = 90.f;
+    float heavy_height = 70.f;
     int   strike_id = 0;                // new number every swing (so an enemy is hit once per swing)
+
+    int vitality = 1;
+    int strength = 1;
+    int endurance = 1;
+    int agility = 1;
+    int hits_taken = 0;
 
     // Health
     int   max_health = 5;
@@ -78,7 +95,8 @@ private:
     sf::Texture sheet_texture;   // must come BEFORE the sprite
     sf::Sprite sprite;
     float anim_timer = 0.f;
-    float sprite_scale = 0.53f;
+    int last_animation_row = -1;
+    float sprite_scale = 0.66f;
 
     sf::Vector2f spawn_point = { 100.f, 200.f };   // where we start / respawn
 
@@ -103,6 +121,10 @@ public:
     float getFacing() const;
     int getHealth() const;
     int getMaxHealth() const;
+    int getStat(int choice) const;
+    int getSwordDamage() const;
+    bool upgradeStat(int choice);
+    void resetStats();
     // True while dashing: the dash is a dodge, so nothing can hurt the knight during it
     bool isDodging() const;
 

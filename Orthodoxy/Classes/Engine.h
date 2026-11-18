@@ -12,7 +12,7 @@
 #include <iostream>
 
 // The three screens of the game
-enum class GameState { MainMenu, Playing, Paused, StageCleared };
+enum class GameState { MainMenu, Playing, Paused, StageCleared, Upgrades };
 
 // Runs the whole game: window, main loop, menus, and everything that lives in the world
 class Engine
@@ -27,6 +27,7 @@ private:
     std::vector<Spike> spikes;
     sf::Texture health_full_texture;
     sf::Texture health_empty_texture;
+    sf::Texture scroll_texture;
     sf::Clock clock;
     Camera camera;
 
@@ -47,6 +48,15 @@ private:
     float combo_timer = 0.f;
     static constexpr float combo_window = 2.5f;
     Region cleared_region = Region::AshenBarrow;
+    int scrolls = 0;
+    int collected_total = 0;
+    int upgrade_index = 0;
+    bool collected_scrolls[8] = {};
+    const sf::Vector2f scroll_positions[8] = {
+        { 350.f, 690.f }, { 1650.f, 805.f }, { 4700.f, 495.f },
+        { 400.f, 825.f }, { 2700.f, 660.f }, { 4810.f, 505.f },
+        { 350.f, 700.f }, { 1700.f, 700.f }
+    };
 
 
     // Blink (eyelid) transition used when the player goes through a portal
@@ -63,6 +73,9 @@ private:
     void render();
     void drawHUD();
     void drawStageCleared();
+    void drawScrolls();
+    void collectScrolls();
+    void drawUpgrades();
     std::string currentObjective() const;
     void recordSwordHit();
 

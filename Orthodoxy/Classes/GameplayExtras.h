@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 #include <SFML/Graphics.hpp>
 #include <SFML/Audio.hpp>
 #include <cmath>
@@ -87,8 +87,10 @@ namespace Extras
     {
         if (flameTexture.getSize().x == 0) return;
         int count = (type == 2) ? 7 : 8;
+        // Fire animation ki frame speed 8 frames/second hai; time x8 aur % count se frames loop karte hain.
         int frame = int(animationClock.getElapsedTime().asSeconds() * 8.f) % count;
         sf::Sprite sprite(flameTexture);
+        // Fire sprite-sheet crop: X = frame index x 256, Y = fire type row x 208.
         sprite.setTextureRect(sf::IntRect({ frame * 256, type * 208 }, { 256, 208 }));
         // Position is the bottom-middle of the effect.
         sprite.setOrigin({ 128.f, 208.f });
@@ -124,7 +126,9 @@ namespace Extras
             }
 
             // Gate ki dono taraf flames.
+            // Pehli decorative flame portal se X+25 aur Y+190 offset par draw hoti hai.
             drawFire(window, x + 25.f, y + 190.f, 3, 0.40f);
+            // Doosri flame same Y par X+168 offset par draw hoti hai.
             drawFire(window, x + 168.f, y + 190.f, 3, 0.40f);
 
             // Door bahut oopar hai; message visible rakhte hain.
@@ -135,6 +139,7 @@ namespace Extras
             // Red Moon Ruins: the portal is already painted in scene7,
             // so we only show the message above it.
             sf::FloatRect trigger = level.getDoorTrigger();
+            // Door prompt trigger ke left X se 10 px aage aur trigger Y se 30 px ooper draw hota hai.
             promptPosition = { trigger.position.x + 10.f, trigger.position.y - 30.f };
         }
 

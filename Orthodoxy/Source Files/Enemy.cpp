@@ -29,6 +29,7 @@ float Enemy::consumeKnockback(float delta_time)
         return 0.f;
 
     knockback_timer -= delta_time;
+    // Enemy ko hit par push distance = direction x knockback speed x frame time.
     return knockback_dir * knockback_speed * delta_time;
 }
 
@@ -49,8 +50,10 @@ bool Enemy::moveHorizontal(float move_x, const std::vector<sf::RectangleShape>& 
         if (enemy_box.findIntersection(solid_box))
         {
             if (move_x > 0.f)   // moving right: stop at the solid's left side
+                // Enemy right wall par aaye to uska X = wall start - enemy width.
                 shape.setPosition({ solid_box.position.x - enemy_box.size.x, enemy_box.position.y });
             else               // moving left: stop at the solid's right side
+                // Enemy left wall par aaye to uska X = wall right edge.
                 shape.setPosition({ solid_box.position.x + solid_box.size.x, enemy_box.position.y });
             hit_wall = true;
         }
@@ -63,7 +66,9 @@ void Enemy::applyGravity(float delta_time, const std::vector<sf::RectangleShape>
 {
     const float gravity = 981.f;
 
+    // Enemy ki Y velocity har frame gravity x seconds se barhti hai.
     velocity_y += gravity * delta_time;
+    // Enemy vertical movement = updated vertical velocity x seconds.
     shape.move({ 0.f, velocity_y * delta_time });
 
     for (const auto& solid : solids)
@@ -74,11 +79,13 @@ void Enemy::applyGravity(float delta_time, const std::vector<sf::RectangleShape>
         {
             if (velocity_y > 0.f)   // falling: land on top of the solid
             {
+                // Landing position = platform top - enemy height, taake enemy floor par khara ho.
                 shape.setPosition({ enemy_box.position.x, solid_box.position.y - enemy_box.size.y });
                 velocity_y = 0.f;
             }
             else if (velocity_y < 0.f)   // going up: bump the head on the underside
             {
+                // Ceiling se takra kar enemy ka top ceiling ke bottom par set karte hain.
                 shape.setPosition({ enemy_box.position.x, solid_box.position.y + solid_box.size.y });
                 velocity_y = 0.f;
             }
@@ -173,6 +180,7 @@ void Golem::update(float delta_time, const std::vector<sf::RectangleShape>& soli
     moveHorizontal(consumeKnockback(delta_time), solids);
 
     // x_to_player is positive when the player is on our right, negative when on our left
+    // Player tak horizontal gap = player X - enemy X; sign se left/right direction pata chalti hai.
     float x_to_player = player_center.x - getCenter().x;
     float distance_to_player = std::abs(x_to_player);
 
@@ -205,6 +213,7 @@ void Golem::update(float delta_time, const std::vector<sf::RectangleShape>& soli
         {
             // Slowly walk toward the player
             state = State::Walk;
+            // Enemy walk distance = facing sign x speed x frame time.
             moveHorizontal(facing * walk_speed * delta_time, solids);
         }
         break;
@@ -265,12 +274,16 @@ void Golem::updateAnimation()
     case State::ThrowWindup:
         row = 2;
         // Spread the 5 pictures evenly over the 0.6 second windup
-        col = std::min(4, static_cast<int>(state_timer / 0.6f * 5.f));
+        // State animation ke 0.6 second ko 5 frames mein baanta; elapsed / duration x frame count.
+        col = int(state_timer / 0.6f * 5.f);
+        if (col > 4) col = 4;
         break;
     case State::SmashWindup:
         row = 3;
         // Spread the first 4 pictures evenly over the 0.8 second windup
-        col = std::min(3, static_cast<int>(state_timer / 0.8f * 4.f));
+        // Smash animation = state time / 0.8 sec x 4 frames; if check last frame par limit lagata hai.
+        col = int(state_timer / 0.8f * 4.f);
+        if (col > 3) col = 3;
         break;
     case State::Recover:
         if (last_attack_was_smash && state_timer < 0.35f)
@@ -286,8 +299,10 @@ void Golem::updateAnimation()
         break;
     }
 
+    // Sprite sheet crop X = column x frame width; Y = row x frame height.
     sprite.setTextureRect(sf::IntRect({ col * cell_width, row * cell_height }, { cell_width, cell_height }));
     sprite.setOrigin({ cell_width / 2.f, feet_y });                 // the golem's feet
+    // Facing -1 ho to sprite horizontally reverse hota hai; +1 ho to normal.
     sprite.setScale({ sprite_scale * facing, sprite_scale });   // the sheet faces right
     // Put the feet at the bottom middle of the hitbox
     sprite.setPosition({ shape.getPosition().x + shape.getSize().x / 2.f,
@@ -305,18 +320,24 @@ void Golem::draw(sf::RenderWindow& window)
 // Throws a rock in a curve (an arc) that lands where the player is standing now
 void Golem::throwRock(sf::Vector2f target, EnemyWorld& world)
 {
+    // Golem rock start X = golem center + facing direction x 40 pixels.
     sf::Vector2f start(getCenter().x + facing * 40.f, shape.getPosition().y + 25.f);
     const float rock_gravity = 900.f;
     float x_gap = target.x - start.x;   // how far the rock must travel sideways
     float y_gap = target.y - start.y;   // how far up/down the target is
     // Far away = longer flight time = higher arc
-    float flight_time = std::clamp(std::abs(x_gap) / 450.f, 0.7f, 1.5f);
+    // Rock flight time ka base estimate horizontal distance / 450; if checks 0.7 se 1.5 seconds ke beech rakhte hain.
+    float flight_time = std::abs(x_gap) / 450.f;
+    if (flight_time < 0.7f) flight_time = 0.7f;
+    if (flight_time > 1.5f) flight_time = 1.5f;
 
     // Sideways speed: simply distance / time
+    // Rock ki horizontal speed = target tak X distance / allowed flight time.
     float speed_x = x_gap / flight_time;
     // Up/down speed: gravity pulls the rock down while it flies, so we throw it upward
     // just enough to still arrive at the target after flight_time seconds.
     // (From: y_gap = speed_y * time + 0.5 * gravity * time * time)
+    // Projectile motion: gravity displacement = 1/2 x gravity x time squared; yGap se minus karke initial Y speed nikalte hain.
     float speed_y = (y_gap - 0.5f * rock_gravity * flight_time * flight_time) / flight_time;
 
     world.projectiles.push_back(
@@ -331,7 +352,9 @@ void Golem::smashGround(EnemyWorld& world)
     float center_x = getCenter().x;
     for (int i = 1; i <= 6; i++)
     {
+        // Ground spikes ki distance = index x 75 + 20; har agla spike aage spawn hota hai.
         float offset = i * 75.f + 20.f;   // distance from the golem
+        // Har spike ka wait = index x 0.09 sec, is se waves mein spikes nikalte hain.
         float spawn_delay = i * 0.09f;    // farther spikes pop out a little later
         world.spikes.push_back(Spike(center_x - offset, ground_y, spawn_delay));   // left side
         world.spikes.push_back(Spike(center_x + offset, ground_y, spawn_delay));   // right side
@@ -366,6 +389,7 @@ void BurstSpirit::update(float delta_time, const std::vector<sf::RectangleShape>
     if (has_last_player_pos && delta_time > 0.f)
     {
         sf::Vector2f moved = player_center - last_player_center;
+        // 2D distance formula sqrt(dx^2 + dy^2); movement ko seconds se divide karke player speed milti hai.
         player_speed = std::sqrt(moved.x * moved.x + moved.y * moved.y) / delta_time;
     }
     last_player_center = player_center;
@@ -378,6 +402,7 @@ void BurstSpirit::update(float delta_time, const std::vector<sf::RectangleShape>
 
     // ---- Distance to the player ----
     sf::Vector2f to_player = player_center - getCenter();
+    // Player tak seedhi distance = sqrt(horizontal gap squared + vertical gap squared).
     float distance_to_player = std::sqrt(to_player.x * to_player.x + to_player.y * to_player.y);
 
     if (distance_to_player <= sight_range)
@@ -391,9 +416,11 @@ void BurstSpirit::update(float delta_time, const std::vector<sf::RectangleShape>
         {
             // Fly toward the player (to_player / distance = direction with length 1)
             if (distance_to_player > 40.f)
+                // Vector ko distance se divide = unit direction; phir speed x dt karne se Spirit player ki taraf move hota hai.
                 shape.move(to_player / distance_to_player * chase_speed * delta_time);
 
             // Gentle floating up and down
+            // Sine wave -1 to +1 ke beech upar/neeche move karti hai; 6 frequency, 25 strength, dt frame time hai.
             shape.move({ 0.f, std::sin(bob_timer * 6.f) * 25.f * delta_time });
 
             // Close AND player stopped for a bit = start the countdown
@@ -407,6 +434,7 @@ void BurstSpirit::update(float delta_time, const std::vector<sf::RectangleShape>
 
     case State::Fuse:
         // Flash red/white. The spirit stops and waits, so you can run away or kill it.
+        // 12 changes/sec ki blinking pattern; %2 se alternate states milti hain.
         base_color = (static_cast<int>(state_timer * 12.f) % 2 == 0)
             ? sf::Color(255, 80, 80) : sf::Color::White;
         if (state_timer >= fuse_time)
@@ -440,6 +468,7 @@ bool BurstSpirit::getAttackHitbox(sf::FloatRect& box) const
 
     sf::Vector2f center = getCenter();
     box = sf::FloatRect({ center.x - explosion_radius, center.y - explosion_radius },
+        // Explosion ka full diameter = radius x 2; rectangle poore blast ko cover karta hai.
         { explosion_radius * 2.f, explosion_radius * 2.f });
     return true;
 }
@@ -467,15 +496,22 @@ void Phoenix::hoverNear(sf::Vector2f player_center, float delta_time)
 
     // Stay on whichever side of the player we are already on
     float side = (center.x < player_center.x) ? -1.f : 1.f;
+    // Phoenix hover X = player center +/- hover distance, side direction decide karta hai.
     float target_x = player_center.x + side * hover_distance;
-    float target_y = std::min(player_center.y - hover_height, 440.f); // stay above the floor
+    // Phoenix player se hover_height upar rehta hai; if check target Y ko 440 se neeche nahi jaane deta.
+    float target_y = player_center.y - hover_height;
+    if (target_y > 440.f) target_y = 440.f; // stay above the floor
 
     sf::Vector2f to_target(target_x - center.x, target_y - center.y);
+    // Hover target tak Pythagoras distance = sqrt(dx^2 + dy^2).
     float distance_to_target = std::sqrt(to_target.x * to_target.x + to_target.y * to_target.y);
     if (distance_to_target > 4.f)
     {
         // Move toward the target, but never past it
-        float step = std::min(hover_speed * delta_time, distance_to_target);
+        // Is frame step = speed x dt, magar remaining distance se zyada nahi, warna overshoot hoga.
+        float step = hover_speed * delta_time;
+        if (step > distance_to_target) step = distance_to_target;
+        // Direction vector normalize karke step se multiply, Phoenix target tak smoothly jata hai.
         shape.move(to_target / distance_to_target * step);
     }
 }
@@ -539,9 +575,11 @@ void Phoenix::update(float delta_time, const std::vector<sf::RectangleShape>&,
         {
             breath_shot_timer = 0.07f;   // one fireball every 0.07 seconds
             // The fire wiggles a little up and down
+            // Fire ka angle sine se halka left/right hilta hai: frequency 14 aur deviation 0.15 radian.
             float angle = breath_angle + std::sin(state_timer * 14.f) * 0.15f;
             sf::Vector2f direction(std::cos(angle), std::sin(angle));
             world.projectiles.push_back(
+                // Fire projectile ki velocity = normalized direction x 430 units/second.
                 Projectile(center + direction * 26.f, { 16.f, 16.f }, direction * 430.f, 0.f, 1,
                     sf::Color(255, 140, 30), 0.7f));
         }
@@ -560,6 +598,7 @@ void Phoenix::update(float delta_time, const std::vector<sf::RectangleShape>&,
             // Remember the direction to the player, so the swoop is a straight line
             float length = std::sqrt(to_player.x * to_player.x + to_player.y * to_player.y);
             if (length > 0.f)
+                // Claw lunge direction = player tak vector / uski length; is ka magnitude 1 hota hai.
                 lunge_dir = to_player / length;
             else
                 lunge_dir = { facing, 0.f };
@@ -570,6 +609,7 @@ void Phoenix::update(float delta_time, const std::vector<sf::RectangleShape>&,
         break;
 
     case State::ClawStrike:
+        // Phoenix ka lunge distance = normalized direction x speed x frame seconds.
         shape.move(lunge_dir * claw_lunge_speed * delta_time); // swoops at the player
         if (state_timer >= 0.25f)
         {
@@ -611,7 +651,8 @@ void Phoenix::updateAnimation()
         break;
     case State::BreathWindup:
         row = 2;
-        col = std::min(2, static_cast<int>(state_timer / 0.55f * 3.f));
+        col = int(state_timer / 0.55f * 3.f);
+        if (col > 2) col = 2;
         break;
     case State::Breathing:
         row = 2;
@@ -619,15 +660,21 @@ void Phoenix::updateAnimation()
         break;
     case State::ClawWindup:
         row = 3;
-        col = std::min(2, static_cast<int>(state_timer / 0.4f * 3.f));
+        col = int(state_timer / 0.4f * 3.f);
+        if (col > 2) col = 2;
         break;
     case State::ClawStrike:
         row = 3;
-        col = 3 + std::min(2, static_cast<int>(state_timer / 0.25f * 3.f));
+        col = int(state_timer / 0.25f * 3.f);
+        if (col > 2) col = 2;
+        col = 3 + col;
         break;
     case State::Dying:
         row = 4;
-        col = 5 + std::min(4, static_cast<int>(state_timer / dying_time * 5.f));
+        // Death animation progress = elapsed / dying duration; x5 se frame sequence select hoti hai.
+        col = int(state_timer / dying_time * 5.f);
+        if (col > 4) col = 4;
+        col = 5 + col;
         break;
     }
 
@@ -688,6 +735,7 @@ bool Phoenix::getAttackHitbox(sf::FloatRect& box) const
     const float box_height = 80.f;
     // The claw box sits in front of the phoenix, on the side it is facing
     float box_x = (facing > 0.f) ? center.x : center.x - box_width;
+    // Attack box ka top = enemy center Y - half attack height.
     box = sf::FloatRect({ box_x, center.y - box_height / 2.f }, { box_width, box_height });
     return true;
 }
@@ -751,6 +799,7 @@ void Skeleton::update(float delta_time, const std::vector<sf::RectangleShape>& s
             state = State::LeapWindup;
             state_timer = 0.f;
         }
+        // Skeleton desired approach distance slash range ka 80% hai; is se attack reach se thora paas aata hai.
         else if (dist > slash_range * 0.8f)
         {
             state = State::Walk;
@@ -783,8 +832,12 @@ void Skeleton::update(float delta_time, const std::vector<sf::RectangleShape>& s
         if (state_timer >= leap_windup_time)
         {
             // Aim at where the player is right now. If the player moves, the jump misses.
+            // Jump physics: total air time approx 2 x upward jump speed / gravity (981).
             float flight_time = 2.f * leap_jump_speed / 981.f;
-            leap_speed_x = std::clamp(dx / flight_time, -leap_max_speed_x, leap_max_speed_x);
+            // Horizontal jump speed = remaining X gap / flight time; if checks maximum left/right speed limit lagate hain.
+            leap_speed_x = dx / flight_time;
+            if (leap_speed_x < -leap_max_speed_x) leap_speed_x = -leap_max_speed_x;
+            if (leap_speed_x > leap_max_speed_x) leap_speed_x = leap_max_speed_x;
             facing = (leap_speed_x >= 0.f) ? 1.f : -1.f;
             velocity_y = -leap_jump_speed;
             state = State::Leap;
