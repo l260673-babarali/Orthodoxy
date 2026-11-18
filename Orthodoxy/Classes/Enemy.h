@@ -21,6 +21,7 @@ protected:
     sf::Color base_color;
     int health;
     bool alive = true;
+    bool defeated_by_player = false;  // excludes spirits that explode on their own
     int last_hit_strike_id = -1;   // the last sword swing that hit us (so one swing hits only once)
     float hurt_timer = 0.f;      // while above 0 the enemy flashes
     float knockback_timer = 0.f;
@@ -49,6 +50,7 @@ public:
     virtual bool getAttackHitbox(sf::FloatRect&) const { return false; }
 
     bool isAlive() const;
+    bool wasDefeatedByPlayer() const;
     int getLastHitStrikeId() const;
     sf::FloatRect getBounds() const;
     sf::Vector2f getCenter() const;

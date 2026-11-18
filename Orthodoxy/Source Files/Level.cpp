@@ -1,4 +1,4 @@
-#include "../Classes/Level.h"
+﻿#include "../Classes/Level.h"
 #include <iostream>
 #include <string>
 
@@ -124,83 +124,78 @@ void Level::buildAshenBarrow()
 // ---------------------------------------------------------------------------
 void Level::buildRedMoonRuins()
 {
-    auto add = [this](int scene, float x, float y, float w)
-    {
-        addSolid(scene * RUINS_SCENE_WIDTH + x, y, w, 14.f);
-    };
-
     // ----- scene5 (first picture) -----
-    add(0, 0.f, 878.f, 745.f);     // left floor
-    add(0, 0.f, 705.f, 210.f);     // ledge above the stairs
-    add(0, 205.f, 725.f, 45.f);    // stairs going down
-    add(0, 245.f, 760.f, 45.f);
-    add(0, 285.f, 795.f, 45.f);
-    add(0, 325.f, 830.f, 45.f);
-    add(0, 245.f, 595.f, 280.f);   // torch ledge
-    add(0, 215.f, 484.f, 110.f);   // wooden swing
-    add(0, 0.f, 322.f, 385.f);     // top-left ledge + plank
-    add(0, 510.f, 618.f, 330.f);   // rope bridge
-    add(0, 645.f, 415.f, 85.f);    // hanging swing
-    add(0, 715.f, 512.f, 415.f);   // big arch top
-    add(0, 1130.f, 540.f, 45.f);   // stairs going down to the right
-    add(0, 1170.f, 562.f, 45.f);
-    add(0, 1210.f, 585.f, 45.f);
-    add(0, 1100.f, 625.f, 220.f);
-    add(0, 1290.f, 575.f, 650.f);  // long right platform (continues into scene6)
-    add(0, 1340.f, 378.f, 85.f);   // broken pillar top
-    add(0, 1465.f, 275.f, 435.f);  // high right platform
-    add(0, 1500.f, 772.f, 60.f);   // short pillar
-    add(0, 610.f, 995.f, 790.f);   // bottom middle ground
-    add(0, 1400.f, 905.f, 540.f);  // bottom right ground
+    addSolid(0.f, 878.f, 745.f, 14.f);     // left floor
+    addSolid(0.f, 705.f, 210.f, 14.f);     // ledge above the stairs
+    addSolid(205.f, 725.f, 45.f, 14.f);    // stairs going down
+    addSolid(245.f, 760.f, 45.f, 14.f);
+    addSolid(285.f, 795.f, 45.f, 14.f);
+    addSolid(325.f, 830.f, 45.f, 14.f);
+    addSolid(245.f, 595.f, 280.f, 14.f);   // torch ledge
+    addSolid(215.f, 484.f, 110.f, 14.f);   // wooden swing
+    addSolid(0.f, 322.f, 385.f, 14.f);     // top-left ledge + plank
+    addSolid(510.f, 618.f, 330.f, 14.f);   // rope bridge
+    addSolid(645.f, 415.f, 85.f, 14.f);    // hanging swing
+    addSolid(715.f, 512.f, 415.f, 14.f);   // big arch top
+    addSolid(1130.f, 540.f, 45.f, 14.f);   // stairs going down to the right
+    addSolid(1170.f, 562.f, 45.f, 14.f);
+    addSolid(1210.f, 585.f, 45.f, 14.f);
+    addSolid(1100.f, 625.f, 220.f, 14.f);
+    addSolid(1290.f, 575.f, 650.f, 14.f);  // long right platform (continues into scene6)
+    addSolid(1340.f, 378.f, 85.f, 14.f);   // broken pillar top
+    addSolid(1465.f, 275.f, 435.f, 14.f);  // high right platform
+    addSolid(1500.f, 772.f, 60.f, 14.f);   // short pillar
+    addSolid(610.f, 995.f, 790.f, 14.f);   // bottom middle ground
+    addSolid(1400.f, 905.f, 540.f, 14.f);  // bottom right ground
 
     // ----- scene6 (second picture) -----
-    add(1, 0.f, 495.f, 440.f);     // portal ledge
-    add(1, 440.f, 530.f, 45.f);    // stairs going down
-    add(1, 480.f, 565.f, 45.f);
-    add(1, 500.f, 608.f, 190.f);
-    add(1, 695.f, 660.f, 40.f);
-    add(1, 705.f, 705.f, 275.f);   // torch table
-    add(1, 585.f, 548.f, 225.f);   // small upper platform
-    add(1, 940.f, 575.f, 180.f);
-    add(1, 1120.f, 565.f, 295.f);  // brazier platform
-    add(1, 1260.f, 775.f, 240.f);
-    add(1, 1480.f, 632.f, 460.f);  // right platform with the dead tree
-    add(1, 0.f, 748.f, 230.f);     // lower-left ledge
-    add(1, 230.f, 775.f, 40.f);    // stairs going down
-    add(1, 270.f, 805.f, 40.f);
-    add(1, 310.f, 835.f, 40.f);
-    add(1, 300.f, 878.f, 250.f);
-    add(1, 550.f, 905.f, 50.f);
-    add(1, 0.f, 928.f, 300.f);     // ground, left
-    add(1, 600.f, 938.f, 590.f);   // ground, middle
-    add(1, 1190.f, 972.f, 310.f);
-    add(1, 1500.f, 925.f, 440.f);  // ground, right
+    addSolid(1.f * RUINS_SCENE_WIDTH + 0.f, 495.f, 440.f, 14.f);     // portal ledge
+    addSolid(1.f * RUINS_SCENE_WIDTH + 440.f, 530.f, 45.f, 14.f);    // stairs going down
+    addSolid(1.f * RUINS_SCENE_WIDTH + 480.f, 565.f, 45.f, 14.f);
+    addSolid(1.f * RUINS_SCENE_WIDTH + 500.f, 608.f, 190.f, 14.f);
+    addSolid(1.f * RUINS_SCENE_WIDTH + 695.f, 660.f, 40.f, 14.f);
+    addSolid(1.f * RUINS_SCENE_WIDTH + 705.f, 705.f, 275.f, 14.f);   // torch table
+    addSolid(1.f * RUINS_SCENE_WIDTH + 585.f, 548.f, 225.f, 14.f);   // small upper platform
+    addSolid(1.f * RUINS_SCENE_WIDTH + 940.f, 575.f, 180.f, 14.f);
+    addSolid(1.f * RUINS_SCENE_WIDTH + 1120.f, 565.f, 295.f, 14.f);  // brazier platform
+    addSolid(1.f * RUINS_SCENE_WIDTH + 1260.f, 775.f, 240.f, 14.f);
+    addSolid(1.f * RUINS_SCENE_WIDTH + 1480.f, 632.f, 460.f, 14.f);  // right platform with the dead tree
+    addSolid(1.f * RUINS_SCENE_WIDTH + 0.f, 748.f, 230.f, 14.f);     // lower-left ledge
+    addSolid(1.f * RUINS_SCENE_WIDTH + 230.f, 775.f, 40.f, 14.f);    // stairs going down
+    addSolid(1.f * RUINS_SCENE_WIDTH + 270.f, 805.f, 40.f, 14.f);
+    addSolid(1.f * RUINS_SCENE_WIDTH + 310.f, 835.f, 40.f, 14.f);
+    addSolid(1.f * RUINS_SCENE_WIDTH + 300.f, 878.f, 250.f, 14.f);
+    addSolid(1.f * RUINS_SCENE_WIDTH + 550.f, 905.f, 50.f, 14.f);
+    addSolid(1.f * RUINS_SCENE_WIDTH + 0.f, 928.f, 300.f, 14.f);     // ground, left
+    addSolid(1.f * RUINS_SCENE_WIDTH + 600.f, 938.f, 590.f, 14.f);   // ground, middle
+    addSolid(1.f * RUINS_SCENE_WIDTH + 1190.f, 972.f, 310.f, 14.f);
+    addSolid(1.f * RUINS_SCENE_WIDTH + 1500.f, 925.f, 440.f, 14.f);  // ground, right
 
     // ----- scene7 (third picture, the exit portal is on the right) -----
-    add(2, 0.f, 688.f, 460.f);     // left stone ledge
-    add(2, 460.f, 678.f, 140.f);   // wooden bridge
-    add(2, 595.f, 672.f, 50.f);    // stairs going up
-    add(2, 640.f, 645.f, 50.f);
-    add(2, 685.f, 618.f, 50.f);
-    add(2, 735.f, 590.f, 50.f);
-    add(2, 780.f, 565.f, 50.f);
-    add(2, 790.f, 552.f, 330.f);   // banner platform
-    add(2, 1120.f, 555.f, 170.f);  // bridge
-    add(2, 1290.f, 585.f, 240.f);
-    add(2, 1520.f, 562.f, 45.f);
-    add(2, 1560.f, 545.f, 380.f);  // portal ledge
-    add(2, 1410.f, 735.f, 230.f);  // lower right ledge
-    add(2, 1600.f, 722.f, 50.f);   // big stairs going up to the portal
-    add(2, 1650.f, 692.f, 50.f);
-    add(2, 1700.f, 662.f, 50.f);
-    add(2, 1750.f, 632.f, 50.f);
-    add(2, 1800.f, 602.f, 50.f);
-    add(2, 1850.f, 572.f, 40.f);
-    add(2, 0.f, 945.f, 540.f);     // ground, left
-    add(2, 680.f, 935.f, 650.f);   // ground, middle
-    add(2, 1330.f, 960.f, 230.f);
-    add(2, 1560.f, 990.f, 380.f);  // ground, right
-    add(1, 1860.f, 940.f, 80.f);   // little bridge between scene6 and scene7
+    addSolid(2.f * RUINS_SCENE_WIDTH + 0.f, 688.f, 460.f, 14.f);     // left stone ledge
+    addSolid(2.f * RUINS_SCENE_WIDTH + 460.f, 678.f, 140.f, 14.f);   // wooden bridge
+    addSolid(2.f * RUINS_SCENE_WIDTH + 595.f, 672.f, 50.f, 14.f);    // stairs going up
+    addSolid(2.f * RUINS_SCENE_WIDTH + 640.f, 645.f, 50.f, 14.f);
+    addSolid(2.f * RUINS_SCENE_WIDTH + 685.f, 618.f, 50.f, 14.f);
+    addSolid(2.f * RUINS_SCENE_WIDTH + 735.f, 590.f, 50.f, 14.f);
+    addSolid(2.f * RUINS_SCENE_WIDTH + 780.f, 565.f, 50.f, 14.f);
+    addSolid(2.f * RUINS_SCENE_WIDTH + 790.f, 552.f, 330.f, 14.f);   // banner platform
+    addSolid(2.f * RUINS_SCENE_WIDTH + 1120.f, 555.f, 170.f, 14.f);  // bridge
+    addSolid(2.f * RUINS_SCENE_WIDTH + 1290.f, 585.f, 240.f, 14.f);
+    addSolid(2.f * RUINS_SCENE_WIDTH + 1520.f, 562.f, 45.f, 14.f);
+    addSolid(2.f * RUINS_SCENE_WIDTH + 1560.f, 545.f, 380.f, 14.f);  // portal ledge
+    addSolid(2.f * RUINS_SCENE_WIDTH + 1410.f, 735.f, 230.f, 14.f);  // lower right ledge
+    addSolid(2.f * RUINS_SCENE_WIDTH + 1600.f, 722.f, 50.f, 14.f);   // big stairs going up to the portal
+    addSolid(2.f * RUINS_SCENE_WIDTH + 1650.f, 692.f, 50.f, 14.f);
+    addSolid(2.f * RUINS_SCENE_WIDTH + 1700.f, 662.f, 50.f, 14.f);
+    addSolid(2.f * RUINS_SCENE_WIDTH + 1750.f, 632.f, 50.f, 14.f);
+    addSolid(2.f * RUINS_SCENE_WIDTH + 1800.f, 602.f, 50.f, 14.f);
+    addSolid(2.f * RUINS_SCENE_WIDTH + 1850.f, 572.f, 40.f, 14.f);
+    addSolid(2.f * RUINS_SCENE_WIDTH + 0.f, 945.f, 540.f, 14.f);     // ground, left
+    addSolid(2.f * RUINS_SCENE_WIDTH + 680.f, 935.f, 650.f, 14.f);   // ground, middle
+    addSolid(2.f * RUINS_SCENE_WIDTH + 1330.f, 960.f, 230.f, 14.f);
+    addSolid(2.f * RUINS_SCENE_WIDTH + 1560.f, 990.f, 380.f, 14.f);  // ground, right
+    addSolid(1.f * RUINS_SCENE_WIDTH + 1860.f, 940.f, 80.f, 14.f);   // little bridge between scene6 and scene7
 
     // Safety floor so nobody falls forever
     addSolid(0.f, 1070.f, RUINS_WIDTH, 16.f);
@@ -288,7 +283,7 @@ void Level::draw(sf::RenderWindow& window)
         }
     }
     // Change this to true only when aligning collision rectangles.
-    bool showPlatforms = true;
+    bool showPlatforms = false;
     if (showPlatforms)
     {
         for (int i = 0; i < (int)platforms.size(); i++)

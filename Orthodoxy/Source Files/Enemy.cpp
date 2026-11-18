@@ -124,10 +124,14 @@ void Enemy::takeDamage(int amount, int strike_id, float from_direction)
     knockback_dir = from_direction;
 
     if (health <= 0)
+    {
+        defeated_by_player = true;
         alive = false;
+    }
 }
 
 bool Enemy::isAlive() const { return alive; }
+bool Enemy::wasDefeatedByPlayer() const { return defeated_by_player; }
 int Enemy::getLastHitStrikeId() const { return last_hit_strike_id; }
 sf::FloatRect Enemy::getBounds() const { return shape.getGlobalBounds(); }
 

@@ -1,7 +1,6 @@
-#pragma once
+﻿#pragma once
 #include <SFML/Graphics.hpp>
 #include <vector>
-#include <memory>
 #include <string>
 #include "Player.h"
 #include "Level.h"
@@ -13,16 +12,17 @@
 #include <iostream>
 
 // The three screens of the game
-enum class GameState { MainMenu, Playing, Paused };
+enum class GameState { MainMenu, Playing, Paused, StageCleared };
 
 // Runs the whole game: window, main loop, menus, and everything that lives in the world
 class Engine
 {
 private:
     sf::RenderWindow window;
+    sf::View ui_view;
     Player player;
     Level level;
-    std::vector<std::unique_ptr<Enemy>> enemies;
+    std::vector<Enemy*> enemies;
     std::vector<Projectile> projectiles;
     std::vector<Spike> spikes;
     sf::Texture health_full_texture;
@@ -33,8 +33,21 @@ private:
     // Menu / pause screen
     GameState state = GameState::MainMenu;
     sf::Font font;
+    sf::Font title_font;
+    bool title_font_loaded = false;
     bool font_loaded = false;
     int menu_index = 0;          // which menu item is highlighted
+
+    int total_kills = 0;
+    int stage_kills = 0;
+    int stage_relics = 0;
+    float stage_seconds = 0.f;
+    int combo_hits = 0;
+    int best_combo = 0;
+    float combo_timer = 0.f;
+    static constexpr float combo_window = 2.5f;
+    Region cleared_region = Region::AshenBarrow;
+
 
     // Blink (eyelid) transition used when the player goes through a portal
     bool blinking = false;
@@ -49,8 +62,12 @@ private:
     void update();
     void render();
     void drawHUD();
+    void drawStageCleared();
+    std::string currentObjective() const;
+    void recordSwordHit();
 
     void startGame();
+    void clearEnemies();
     void spawnEnemies();                 // enemies for the current region
     void enterRegion(Region region);     // switch region: new level, enemies, player spawn
     void startBlink(Region target);
@@ -63,6 +80,7 @@ private:
 
 public:
     Engine();
+    ~Engine();
 
     void run();
 };

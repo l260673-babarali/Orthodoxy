@@ -2,8 +2,8 @@
 
 Camera::Camera()
 {
-    view.setSize({ 800.f, 600.f });
-    view.setCenter({ 400.f, 300.f });
+    view.setSize({ 960.f, 540.f });
+    view.setCenter({ 480.f, 270.f });
 }
 
 // Center the view on the target, but clamp it so we never see outside the level
