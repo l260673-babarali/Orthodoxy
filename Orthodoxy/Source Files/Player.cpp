@@ -1,4 +1,4 @@
-#include "../Classes/Player.h"
+﻿#include "../Classes/Player.h"
 #include<iostream>
 
 
@@ -68,6 +68,30 @@ void Player::update(
     bool heavy_pressed = heavy_held && !heavy_was_held;
     heavy_was_held = heavy_held;
 
+    if (heavy_charging)
+    {
+        if (!heavy_held)
+        {
+            // K jaldi chhorne par charge cancel ho jata hai.
+            heavy_charging = false;
+            heavy_charge_timer = 0.f;
+        }
+        else
+        {
+            heavy_charge_timer += delta_time;
+            if (heavy_charge_timer >= heavy_charge_time)
+            {
+                // K ko 2 seconds hold karne ke baad heavy swing hota hai.
+                heavy_charging = false;
+                heavy_charge_timer = 0.f;
+                is_heavy_striking = true;
+                heavy_timer = 0.f;
+                heavy_cooldown_timer = heavy_cooldown;
+                strike_id++;
+            }
+        }
+    }
+
     float input_dir = 0.f;   // -1 = left, 0 = nothing, 1 = right
     // A press karne se horizontal direction -1 yani left banti hai.
     if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::A)) input_dir -= 1.f;
@@ -117,7 +141,7 @@ void Player::update(
     bool near_wall = touching_wall || is_clinging;
 
     // ---- Strike ----
-    if (strike_pressed && !is_striking && !is_heavy_striking && !is_dashing && !near_wall && strike_cooldown_timer <= 0.f)
+    if (strike_pressed && !is_striking && !is_heavy_striking && !heavy_charging && !is_dashing && !near_wall && strike_cooldown_timer <= 0.f)
     {
         is_striking = true;
         strike_timer = 0.f;
@@ -125,12 +149,11 @@ void Player::update(
         strike_id++;
     }
 
-    if (heavy_pressed && !is_heavy_striking && !is_striking && !is_dashing && !near_wall && heavy_cooldown_timer <= 0.f)
+    if (heavy_pressed && !heavy_charging && !is_heavy_striking && !is_striking
+        && !is_dashing && !near_wall && heavy_cooldown_timer <= 0.f)
     {
-        is_heavy_striking = true;
-        heavy_timer = 0.f;
-        heavy_cooldown_timer = heavy_cooldown;
-        strike_id++;
+        heavy_charging = true;
+        heavy_charge_timer = 0.f;
     }
 
     // ---- Crouch ----
@@ -180,7 +203,7 @@ void Player::update(
     if (is_striking && is_on_ground)
         move_x *= 0.3f;
 
-    if (is_heavy_striking && is_on_ground)
+    if ((is_heavy_striking || heavy_charging) && is_on_ground)
         move_x *= 0.15f;
 
     if (is_crouching)
@@ -226,7 +249,7 @@ void Player::update(
 
     // ---- Dash ----
     if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::LShift)
-        && can_dash && !is_dashing && !is_striking && !is_heavy_striking && !is_clinging && dash_cooldown_timer <= 0.f)
+        && can_dash && !is_dashing && !is_striking && !is_heavy_striking && !heavy_charging && !is_clinging && dash_cooldown_timer <= 0.f)
     {
         is_dashing = true;
         can_dash = false;
@@ -337,7 +360,7 @@ void Player::update(
     int row = 0;
     int col = 0;
 
-    if (is_heavy_striking)
+    if (is_heavy_striking || heavy_charging)
     {
         row = 8;
     }
@@ -413,9 +436,18 @@ void Player::update(
             col = 5;
         break;
     case 8:
-        col = int(heavy_timer / heavy_duration * 9.f);
-        if (col > 8)
-            col = 8;
+        if (heavy_charging)
+        {
+            // Charge ke duran wind-up ke pehle 4 frames dikhte hain.
+            col = int(heavy_charge_timer / heavy_charge_time * 4.f);
+            if (col > 3) col = 3;
+        }
+        else
+        {
+            // Swing charge ke baad ke 5 frames mein chalta hai.
+            col = 4 + int(heavy_timer / heavy_duration * 5.f);
+            if (col > 8) col = 8;
+        }
         break;
     }
 
@@ -585,6 +617,8 @@ void Player::takeDamage(int amount, float from_direction)
     is_dashing = false;
     is_striking = false;
     is_heavy_striking = false;
+    heavy_charging = false;
+    heavy_charge_timer = 0.f;
     is_clinging = false;
 }
 
@@ -611,10 +645,30 @@ int Player::getStat(int choice) const
     }
 }
 
+float Player::getHeavyCharge() const
+{
+    if (!heavy_charging) return 0.f;
+    return heavy_charge_timer / heavy_charge_time;
+}
+
+void Player::restoreProgress(float x, float y, int savedHealth,
+    int savedVitality, int savedStrength, int savedEndurance, int savedAgility)
+{
+    vitality = savedVitality;
+    strength = savedStrength;
+    endurance = savedEndurance;
+    agility = savedAgility;
+    max_health = 4 + vitality;
+    reset({ x, y });
+    health = savedHealth;
+    if (health > max_health) health = max_health;
+    if (health < 1) health = 1;
+}
+
 int Player::getSwordDamage() const
 {
     if (is_heavy_striking)
-        return strength + 2;
+        return strength + 1;
 
     return strength;
 }
@@ -716,6 +770,9 @@ void Player::reset(sf::Vector2f spawn)
     is_dashing = false;
     is_striking = false;
     is_heavy_striking = false;
+    heavy_charging = false;
+    heavy_charge_timer = 0.f;
+    heavy_was_held = sf::Keyboard::isKeyPressed(sf::Keyboard::Key::K);
     is_clinging = false;
     is_crouching = false;
     can_dash = true;

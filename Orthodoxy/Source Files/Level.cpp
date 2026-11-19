@@ -226,7 +226,7 @@ Region Level::getRegion() const { return region; }
 sf::Vector2f Level::getSpawn() const
 {
     if (region == Region::RedMoonRuins)
-        return { 120.f, 790.f };   // on the left floor of scene5
+        return { 120.f, 500.f };   // the knight falls onto the first safe platform
     return { 100.f, 200.f };
 }
 

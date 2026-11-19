@@ -1,6 +1,7 @@
 ﻿#include "../Classes/GameplayExtras.h"
 #include "../Classes/Engine.h"
 #include <iostream>
+#include <fstream>
 
 namespace
 {
@@ -199,6 +200,7 @@ void Engine::updateBlink(float deltaTime)
     {
         blinkSwitched = true;
         enterRegion(blinkTarget);
+        saveGame();
     }
 
     if (blinkTimer >= blinkCloseTime + blinkHoldTime + blinkOpenTime)
@@ -254,31 +256,59 @@ void Engine::drawBlink()
 std::vector<std::string> Engine::menuItems() const
 {
     if (state == GameState::MainMenu)
-        return { "Play", "Quit" };
-    return { "Resume", "Main Menu", "Quit" };
+    {
+        if (hasSave())
+            return { "New Game", "Continue", "Controls", "Quit" };
+
+        return { "New Game", "Controls", "Quit" };
+    }
+
+    return { "Resume", "Controls", "Main Menu", "Quit" };
 }
 
 void Engine::activateMenuItem()
 {
     if (state == GameState::MainMenu)
     {
-        if (menu_index == 0) startGame();
-        else window.close();
+        std::vector<std::string> items = menuItems();
+        std::string selected = items[menu_index];
+
+        if (selected == "New Game")
+        {
+            startGame();
+        }
+        else if (selected == "Continue")
+        {
+            loadGame();
+        }
+        else if (selected == "Controls")
+        {
+            controls_from_pause = false;
+            state = GameState::Controls;
+        }
+        else if (selected == "Quit")
+        {
+            window.close();
+        }
     }
     else if (state == GameState::Paused)
     {
-        if (menu_index == 0)
+        switch (menu_index)
         {
+        case 0:
             state = GameState::Playing;
-        }
-        else if (menu_index == 1)
-        {
+            break;
+        case 1:
+            controls_from_pause = true;
+            state = GameState::Controls;
+            break;
+        case 2:
             state = GameState::MainMenu;
             menu_index = 0;
-        }
-        else
-        {
+            break;
+        case 3:
             window.close();
+            break;
         }
     }
 }
@@ -289,6 +319,16 @@ void Engine::handleKey(sf::Keyboard::Key key)
 
     if (state == GameState::Playing)
     {
+        if (key == K::F5 && !blinking)
+        {
+            saveGame();
+            return;
+        }
+        if (key == K::F9 && !blinking)
+        {
+            loadGame();
+            return;
+        }
         if (key == K::U && !blinking)
         {
             state = GameState::Upgrades;
@@ -307,6 +347,18 @@ void Engine::handleKey(sf::Keyboard::Key key)
         {
             state = GameState::Paused;
             menu_index = 0;
+        }
+        return;
+    }
+
+    if (state == GameState::Controls)
+    {
+        if (key == K::Escape || key == K::Enter || key == K::Space)
+        {
+            if (controls_from_pause)
+                state = GameState::Paused;
+            else
+                state = GameState::MainMenu;
         }
         return;
     }
@@ -397,7 +449,7 @@ void Engine::drawMenu(const std::string& title)
         return;
 
     const sf::Font& headingFont = title_font_loaded ? title_font : font;
-    uiPanel(window, 270.f, 89.f, 420.f, 346.f);
+    uiPanel(window, 270.f, 82.f, 420.f, 381.f);
     uiText(window, font, state == GameState::Paused ? "ALTAR OF REFLECTION" :
         "A DARK FANTASY ACTION PLATFORMER", 13, 480.f, 111.f, muted, true);
     uiText(window, headingFont, title, state == GameState::Paused ? 40 : 49,
@@ -424,7 +476,58 @@ void Engine::drawMenu(const std::string& title)
             selected ? gold : parchment, true);
     }
     uiText(window, font, "W / S  -  SELECT       ENTER  -  CONFIRM",
-        12, 480.f, 407.f, muted, true);
+        12, 480.f, 439.f, muted, true);
+}
+
+void Engine::drawControls()
+{
+    window.setView(ui_view);
+
+    if (controls_from_pause)
+    {
+        sf::RectangleShape dim({ 960.f, 540.f });
+        dim.setFillColor(sf::Color(7, 5, 11, 225));
+        window.draw(dim);
+    }
+    else
+    {
+        sf::RectangleShape background({ 960.f, 540.f });
+        background.setFillColor(ink);
+        window.draw(background);
+    }
+
+    if (!font_loaded)
+        return;
+
+    const sf::Font& heading = title_font_loaded ? title_font : font;
+    uiPanel(window, 148.f, 38.f, 664.f, 458.f);
+    uiText(window, font, "ORTHODOXY  -  THE KNIGHT'S GUIDE", 13,
+        480.f, 55.f, muted, true);
+    uiText(window, heading, "CONTROLS", 38, 480.f, 82.f, gold, true);
+    uiRule(window, 192.f, 131.f, 576.f);
+
+    uiText(window, heading, "MOVEMENT", 18, 197.f, 151.f, gold);
+    uiText(window, heading, "COMBAT", 18, 502.f, 151.f, gold);
+
+    const char* move_keys[5] = { "A / D", "SPACE", "S", "SHIFT", "E" };
+    const char* move_actions[5] = { "Move left / right", "Jump / double jump", "Crouch", "Dash", "Use portal" };
+    const char* fight_keys[5] = { "J", "HOLD K", "U", "F5", "F9" };
+    const char* fight_actions[5] = { "Light sword attack", "Heavy attack (0.50s)", "Open upgrades", "Save game", "Load game" };
+
+    for (int i = 0; i < 5; i++)
+    {
+        float y = 192.f + i * 39.f;
+        uiText(window, font, move_keys[i], 15, 197.f, y, gold);
+        uiText(window, font, move_actions[i], 14, 272.f, y, parchment);
+        uiText(window, font, fight_keys[i], 15, 502.f, y, gold);
+        uiText(window, font, fight_actions[i], 14, 584.f, y, parchment);
+    }
+
+    uiRule(window, 192.f, 401.f, 576.f);
+    uiText(window, font, "W / S or ARROWS: MENU     ENTER: SELECT", 14,
+        480.f, 417.f, parchment, true);
+    uiText(window, font, "ESC / ENTER: BACK", 14,
+        480.f, 451.f, gold, true);
 }
 
 void Engine::run()
@@ -497,6 +600,9 @@ void Engine::update()
 
     // Stage timer mein har frame ke actual seconds add hote hain; timer FPS se independent rehta hai.
     stage_seconds += delta_time;
+    if (save_message_timer > 0.f)
+        save_message_timer -= delta_time;
+
     if (combo_timer > 0.f)
     {
         // Combo ki remaining window har frame guzre hue seconds se ghatti hai.
@@ -644,11 +750,25 @@ void Engine::drawHUD()
     uiRule(window, 22.f, 76.f, 311.f);
     uiText(window, font, currentObjective(), 13, 22.f, 81.f, parchment);
 
-    uiText(window, font, "SCROLLS " + std::to_string(scrolls) + "   [U] UPGRADES",
+    uiText(window, font, "SCROLLS  " + std::to_string(scrolls),
         13, 22.f, 116.f, gold);
     uiText(window, font, "STAGE TIME", 13, 818.f, 20.f, muted);
     uiText(window, title_font_loaded ? title_font : font,
         stageClock(stage_seconds), 21, 818.f, 36.f, gold);
+
+    if (player.getHeavyCharge() > 0.f)
+    {
+        uiPanel(window, 805.f, 145.f, 143.f, 56.f);
+        uiText(window, font, "HOLY SMITE", 12, 817.f, 154.f, gold);
+        sf::RectangleShape track({ 115.f, 9.f });
+        track.setPosition({ 818.f, 180.f });
+        track.setFillColor(sf::Color(65, 53, 56));
+        window.draw(track);
+        sf::RectangleShape fill({ 115.f * player.getHeavyCharge(), 9.f });
+        fill.setPosition({ 818.f, 180.f });
+        fill.setFillColor(crimson);
+        window.draw(fill);
+    }
 
     if (combo_hits > 1)
     {
@@ -805,6 +925,14 @@ void Engine::render()
         return;
     }
 
+    if (state == GameState::Controls && !controls_from_pause)
+    {
+        window.clear(sf::Color::Black);
+        drawControls();
+        window.display();
+        return;
+    }
+
     window.clear(sf::Color::Black);
     camera.apply(window);
 
@@ -824,10 +952,13 @@ void Engine::render()
     player.draw(window);
     drawScrolls();
     drawHUD();
+    drawSaveMessage();
     drawBlink();
 
     if (state == GameState::Paused)
         drawMenu("PAUSED");
+    else if (state == GameState::Controls)
+        drawControls();
     else if (state == GameState::Upgrades)
         drawUpgrades();
 
@@ -837,3 +968,129 @@ void Engine::render()
 
 
 
+
+
+bool Engine::hasSave() const
+{
+    std::ifstream file("orthodoxy_save.txt");
+    std::string firstLine;
+    if (!file.is_open()) return false;
+    file >> firstLine;
+    return firstLine == "ORTHODOXY_SAVE_V1";
+}
+
+bool Engine::saveGame()
+{
+    std::ofstream file("orthodoxy_save.txt");
+    if (!file.is_open())
+    {
+        save_message = "COULD NOT SAVE";
+        save_message_timer = 2.f;
+        return false;
+    }
+
+    sf::Vector2f position = player.getBounds().position;
+    file << "ORTHODOXY_SAVE_V1\n";
+    file << (int)level.getRegion() << ' ' << position.x << ' ' << position.y << '\n';
+    file << player.getHealth() << ' ';
+    for (int i = 0; i < 4; i++) file << player.getStat(i) << ' ';
+    file << '\n';
+    file << scrolls << ' ' << collected_total << ' ' << total_kills << ' ';
+    file << stage_kills << ' ' << stage_relics << ' ' << best_combo << ' ' << stage_seconds << '\n';
+    for (int i = 0; i < 8; i++) file << (collected_scrolls[i] ? 1 : 0) << ' ';
+    file << '\n';
+    file.close();
+
+    if (!file)
+    {
+        save_message = "COULD NOT SAVE";
+        save_message_timer = 2.f;
+        return false;
+    }
+    save_message = "PROGRESS SAVED";
+    save_message_timer = 2.f;
+    return true;
+}
+
+bool Engine::loadGame()
+{
+    std::ifstream file("orthodoxy_save.txt");
+    if (!file.is_open())
+    {
+        save_message = "NO SAVE FOUND";
+        save_message_timer = 2.f;
+        return false;
+    }
+
+    std::string version;
+    int regionNumber = -1;
+    int health = 0;
+    int stats[4] = {};
+    int savedScrolls = 0, savedCollected = 0, savedKills = 0;
+    int savedStageKills = 0, savedRelics = 0, savedCombo = 0;
+    float x = 0.f, y = 0.f, savedTime = 0.f;
+    int flags[8] = {};
+
+    file >> version >> regionNumber >> x >> y >> health;
+    for (int i = 0; i < 4; i++) file >> stats[i];
+    file >> savedScrolls >> savedCollected >> savedKills;
+    file >> savedStageKills >> savedRelics >> savedCombo >> savedTime;
+    for (int i = 0; i < 8; i++) file >> flags[i];
+
+    bool valid = (bool)file;
+    if (version != "ORTHODOXY_SAVE_V1") valid = false;
+    if (regionNumber < 0 || regionNumber > 2) valid = false;
+    if (!(x >= 0.f && x <= 7000.f && y >= -1000.f && y <= 1500.f)) valid = false;
+    if (health < 1 || health > 9) valid = false;
+    for (int i = 0; i < 4; i++)
+        if (stats[i] < 1 || stats[i] > 5) valid = false;
+    if (savedScrolls < 0 || savedScrolls > 8) valid = false;
+    if (savedCollected < 0 || savedCollected > 8) valid = false;
+    if (savedKills < 0 || savedStageKills < 0 || savedRelics < 0 || savedCombo < 0) valid = false;
+    if (!(savedTime >= 0.f && savedTime < 100000000.f)) valid = false;
+    int collectedCount = 0;
+    for (int i = 0; i < 8; i++)
+    {
+        if (flags[i] != 0 && flags[i] != 1) valid = false;
+        if (flags[i] == 1) collectedCount++;
+    }
+    if (savedCollected != collectedCount || savedScrolls > savedCollected) valid = false;
+    if (health > 4 + stats[0]) valid = false;
+
+    if (!valid)
+    {
+        save_message = "SAVE FILE INVALID";
+        save_message_timer = 2.f;
+        return false;
+    }
+
+    blinking = false;
+    level.setRegion((Region)regionNumber);
+    spawnEnemies();
+    player.restoreProgress(x, y, health, stats[0], stats[1], stats[2], stats[3]);
+    scrolls = savedScrolls;
+    collected_total = savedCollected;
+    total_kills = savedKills;
+    stage_kills = savedStageKills;
+    stage_relics = savedRelics;
+    best_combo = savedCombo;
+    stage_seconds = savedTime;
+    combo_hits = 0;
+    combo_timer = 0.f;
+    for (int i = 0; i < 8; i++) collected_scrolls[i] = (flags[i] == 1);
+    camera.follow(player.getCenter(), level.getWidth(), level.getTop(), level.getHeight());
+    state = GameState::Playing;
+    menu_index = 0;
+    clock.restart();
+    save_message = "PROGRESS RESTORED";
+    save_message_timer = 2.f;
+    return true;
+}
+
+void Engine::drawSaveMessage()
+{
+    if (save_message_timer <= 0.f || !font_loaded) return;
+    window.setView(ui_view);
+    uiPanel(window, 338.f, 464.f, 284.f, 52.f);
+    uiText(window, font, save_message, 17, 480.f, 479.f, gold, true);
+}
