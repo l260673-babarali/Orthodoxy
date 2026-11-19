@@ -12,7 +12,7 @@
 #include <iostream>
 
 // The three screens of the game
-enum class GameState { MainMenu, Playing, Paused, StageCleared, Upgrades };
+enum class GameState { MainMenu, Playing, Paused, StageCleared, Upgrades, Controls };
 
 // Runs the whole game: window, main loop, menus, and everything that lives in the world
 class Engine
@@ -38,7 +38,10 @@ private:
     bool title_font_loaded = false;
     bool font_loaded = false;
     int menu_index = 0;          // which menu item is highlighted
+    bool controls_from_pause = false;
 
+    float enemy_respawn_timer = 0.f;
+    int enemy_respawn_number = 0;
     int total_kills = 0;
     int stage_kills = 0;
     int stage_relics = 0;
@@ -78,10 +81,17 @@ private:
     void drawUpgrades();
     std::string currentObjective() const;
     void recordSwordHit();
+    bool saveGame();
+    bool loadGame();
+    bool hasSave() const;
+    void drawSaveMessage();
+    float save_message_timer = 0.f;
+    std::string save_message;
 
     void startGame();
     void clearEnemies();
     void spawnEnemies();                 // enemies for the current region
+    void respawnEnemy(float delta_time);
     void enterRegion(Region region);     // switch region: new level, enemies, player spawn
     void startBlink(Region target);
     void updateBlink(float deltaTime);
@@ -90,6 +100,7 @@ private:
     void activateMenuItem();
     std::vector<std::string> menuItems() const;
     void drawMenu(const std::string& title);
+    void drawControls();
 
 public:
     Engine();

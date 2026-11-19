@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 #include <SFML/Graphics.hpp>
 #include <vector>
 #include <string>
@@ -46,14 +46,17 @@ private:
     float strike_height = 50.f;
 
     bool  heavy_was_held = false;
+    bool  heavy_charging = false;
+    float heavy_charge_timer = 0.f;
+    float heavy_charge_time = 0.50f;
     float heavy_duration = 0.50f;
-    float heavy_active_start = 0.16f;
-    float heavy_active_end = 0.36f;
+    float heavy_active_start = 0.17f;
+    float heavy_active_end = 0.29f;
     float heavy_timer = 0.f;
-    float heavy_cooldown = 0.65f;
+    float heavy_cooldown = 0.85f;
     float heavy_cooldown_timer = 0.f;
-    float heavy_range = 90.f;
-    float heavy_height = 70.f;
+    float heavy_range = 70.f;
+    float heavy_height = 55.f;
     int   strike_id = 0;                // new number every swing (so an enemy is hit once per swing)
 
     int vitality = 1;
@@ -96,7 +99,7 @@ private:
     sf::Sprite sprite;
     float anim_timer = 0.f;
     int last_animation_row = -1;
-    float sprite_scale = 0.66f;
+    float sprite_scale = 0.70f;
 
     sf::Vector2f spawn_point = { 100.f, 200.f };   // where we start / respawn
 
@@ -123,6 +126,9 @@ public:
     int getMaxHealth() const;
     int getStat(int choice) const;
     int getSwordDamage() const;
+    float getHeavyCharge() const;
+    void restoreProgress(float x, float y, int savedHealth,
+        int savedVitality, int savedStrength, int savedEndurance, int savedAgility);
     bool upgradeStat(int choice);
     void resetStats();
     // True while dashing: the dash is a dodge, so nothing can hurt the knight during it

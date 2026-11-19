@@ -20,6 +20,7 @@ protected:
     sf::RectangleShape shape;   // the enemy's body / hitbox
     sf::Color base_color;
     int health;
+    int difficulty_level = 1;
     bool alive = true;
     bool defeated_by_player = false;  // excludes spirits that explode on their own
     int last_hit_strike_id = -1;   // the last sword swing that hit us (so one swing hits only once)
@@ -49,6 +50,8 @@ public:
     // Is the enemy hitting something right now (claws, explosion)? Fills 'box' if yes.
     virtual bool getAttackHitbox(sf::FloatRect&) const { return false; }
 
+    void setDifficulty(int level);
+    int getAttackDamage() const;
     bool isAlive() const;
     bool wasDefeatedByPlayer() const;
     int getLastHitStrikeId() const;

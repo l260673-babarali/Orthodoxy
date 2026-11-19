@@ -137,6 +137,19 @@ void Enemy::takeDamage(int amount, int strike_id, float from_direction)
     }
 }
 
+void Enemy::setDifficulty(int level)
+{
+    difficulty_level = level;
+    health += (level - 1) * 2;
+}
+
+int Enemy::getAttackDamage() const
+{
+    if (difficulty_level == 3)
+        return 2;
+    return 1;
+}
+
 bool Enemy::isAlive() const { return alive; }
 bool Enemy::wasDefeatedByPlayer() const { return defeated_by_player; }
 int Enemy::getLastHitStrikeId() const { return last_hit_strike_id; }
@@ -214,7 +227,7 @@ void Golem::update(float delta_time, const std::vector<sf::RectangleShape>& soli
             // Slowly walk toward the player
             state = State::Walk;
             // Enemy walk distance = facing sign x speed x frame time.
-            moveHorizontal(facing * walk_speed * delta_time, solids);
+            moveHorizontal(facing * walk_speed * delta_time * (1.f + 0.15f * (difficulty_level - 1)), solids);
         }
         break;
 
@@ -417,7 +430,7 @@ void BurstSpirit::update(float delta_time, const std::vector<sf::RectangleShape>
             // Fly toward the player (to_player / distance = direction with length 1)
             if (distance_to_player > 40.f)
                 // Vector ko distance se divide = unit direction; phir speed x dt karne se Spirit player ki taraf move hota hai.
-                shape.move(to_player / distance_to_player * chase_speed * delta_time);
+                shape.move(to_player / distance_to_player * chase_speed * delta_time * (1.f + 0.15f * (difficulty_level - 1)));
 
             // Gentle floating up and down
             // Sine wave -1 to +1 ke beech upar/neeche move karti hai; 6 frequency, 25 strength, dt frame time hai.
@@ -509,7 +522,7 @@ void Phoenix::hoverNear(sf::Vector2f player_center, float delta_time)
     {
         // Move toward the target, but never past it
         // Is frame step = speed x dt, magar remaining distance se zyada nahi, warna overshoot hoga.
-        float step = hover_speed * delta_time;
+        float step = hover_speed * delta_time * (1.f + 0.15f * (difficulty_level - 1));
         if (step > distance_to_target) step = distance_to_target;
         // Direction vector normalize karke step se multiply, Phoenix target tak smoothly jata hai.
         shape.move(to_target / distance_to_target * step);
@@ -803,7 +816,7 @@ void Skeleton::update(float delta_time, const std::vector<sf::RectangleShape>& s
         else if (dist > slash_range * 0.8f)
         {
             state = State::Walk;
-            moveHorizontal(facing * walk_speed * delta_time, solids);
+            moveHorizontal(facing * walk_speed * delta_time * (1.f + 0.15f * (difficulty_level - 1)), solids);
         }
         break;
 

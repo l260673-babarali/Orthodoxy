@@ -145,27 +145,165 @@ void Engine::spawnEnemies()
     clearEnemies();
     projectiles.clear();
     spikes.clear();
+    enemy_respawn_timer = 0.f;
+    enemy_respawn_number = 0;
+
+    int difficulty = 1;
 
     if (level.getRegion() == Region::AshenBarrow)
     {
-        enemies.push_back(new Golem(1000.f, 430.f));
+        enemies.push_back(new Skeleton(900.f, 650.f));
         enemies.push_back(new BurstSpirit(1450.f, 380.f));
-        enemies.push_back(new BurstSpirit(1650.f, 360.f));
-        enemies.push_back(new Phoenix(1950.f, 250.f));
-        enemies.push_back(new Skeleton(2700.f, 780.f));            // falls onto the long floor
+        enemies.push_back(new Skeleton(2700.f, 780.f));
+        enemies.push_back(new BurstSpirit(3750.f, 600.f));
+        enemies.push_back(new Skeleton(4850.f, 540.f));
     }
     else if (level.getRegion() == Region::RedMoonRuins)
     {
-        // Positions are in world coordinates (scene5 starts at x=0, scene6 at 1940, scene7 at 3880)
-        enemies.push_back(new Golem(900.f, 885.f));                 // scene5, bottom middle ground
-        enemies.push_back(new BurstSpirit(1700.f, 700.f));          // scene5, right side
-        enemies.push_back(new BurstSpirit(2700.f, 650.f));          // scene6
-        enemies.push_back(new Phoenix(3300.f, 400.f));              // scene6, flying
-        enemies.push_back(new Golem(4780.f, 825.f));                // scene7, bottom middle ground
-        enemies.push_back(new Skeleton(550.f, 780.f));              // scene5, left floor
-        enemies.push_back(new Skeleton(2900.f, 840.f));             // scene6, ground
+        difficulty = 2;
+        enemies.push_back(new Golem(900.f, 885.f));
+        enemies.push_back(new BurstSpirit(1700.f, 700.f));
+        enemies.push_back(new BurstSpirit(2700.f, 650.f));
+        enemies.push_back(new Phoenix(3300.f, 400.f));
+        enemies.push_back(new Golem(4780.f, 825.f));
+        enemies.push_back(new Skeleton(550.f, 780.f));
+        enemies.push_back(new Skeleton(2900.f, 840.f));
     }
-    // The cathedral has no enemies yet
+    else if (level.getRegion() == Region::Cathedral)
+    {
+        difficulty = 3;
+        enemies.push_back(new Skeleton(560.f, 750.f));
+        enemies.push_back(new Golem(1700.f, 790.f));
+        enemies.push_back(new Phoenix(2450.f, 380.f));
+        enemies.push_back(new Skeleton(3350.f, 750.f));
+    }
+
+    for (Enemy* enemy : enemies)
+        enemy->setDifficulty(difficulty);
+}
+
+void Engine::respawnEnemy(float delta_time)
+{
+    int minimum = 2;
+    int maximum = 5;
+    float delay = 14.f;
+    int difficulty = 1;
+
+    if (level.getRegion() == Region::RedMoonRuins)
+    {
+        minimum = 3;
+        maximum = 7;
+        delay = 12.f;
+        difficulty = 2;
+    }
+    else if (level.getRegion() == Region::Cathedral)
+    {
+        minimum = 2;
+        maximum = 4;
+        delay = 12.f;
+        difficulty = 3;
+    }
+
+    if ((int)enemies.size() >= minimum || (int)enemies.size() >= maximum)
+    {
+        enemy_respawn_timer = 0.f;
+        return;
+    }
+
+    enemy_respawn_timer += delta_time;
+    if (enemy_respawn_timer < delay)
+        return;
+
+    sf::Vector2f player_position = player.getCenter();
+    float spawn_x = -1.f;
+    float spawn_y = 0.f;
+    float best_distance = 999999.f;
+
+    // Platform par enemy spawn hota hai, lekin player ya doosre enemy ke bilkul paas nahi.
+    for (const sf::RectangleShape& platform : level.getPlatforms())
+    {
+        sf::FloatRect box = platform.getGlobalBounds();
+        if (box.size.x < 160.f)
+            continue;
+
+        float x = box.position.x + box.size.x / 2.f;
+        float y = box.position.y;
+        float gap = x - player_position.x;
+        if (gap < 0.f)
+            gap = -gap;
+        if (gap < 500.f || gap > 1300.f)
+            continue;
+
+        float height_gap = y - player_position.y;
+        if (height_gap < 0.f)
+            height_gap = -height_gap;
+        if (height_gap > 350.f)
+            continue;
+
+        bool occupied = false;
+        for (Enemy* enemy : enemies)
+        {
+            float enemy_gap = enemy->getCenter().x - x;
+            if (enemy_gap < 0.f)
+                enemy_gap = -enemy_gap;
+            if (enemy_gap < 230.f)
+                occupied = true;
+        }
+        if (occupied)
+            continue;
+
+        float distance = gap - 850.f;
+        if (distance < 0.f)
+            distance = -distance;
+        if (distance < best_distance)
+        {
+            best_distance = distance;
+            spawn_x = x;
+            spawn_y = y;
+        }
+    }
+
+    if (spawn_x < 0.f)
+    {
+        enemy_respawn_timer = delay - 3.f;
+        return;
+    }
+
+    Enemy* new_enemy = nullptr;
+    if (level.getRegion() == Region::AshenBarrow)
+    {
+        if (enemy_respawn_number % 3 == 2)
+            new_enemy = new BurstSpirit(spawn_x, spawn_y - 130.f);
+        else
+            new_enemy = new Skeleton(spawn_x, spawn_y - 84.f);
+    }
+    else if (level.getRegion() == Region::RedMoonRuins)
+    {
+        switch (enemy_respawn_number % 4)
+        {
+        case 0: new_enemy = new Skeleton(spawn_x, spawn_y - 84.f); break;
+        case 1: new_enemy = new BurstSpirit(spawn_x, spawn_y - 130.f); break;
+        case 2: new_enemy = new Golem(spawn_x, spawn_y - 110.f); break;
+        default: new_enemy = new Phoenix(spawn_x, spawn_y - 180.f); break;
+        }
+    }
+    else
+    {
+        switch (enemy_respawn_number % 3)
+        {
+        case 0: new_enemy = new Skeleton(spawn_x, spawn_y - 84.f); break;
+        case 1: new_enemy = new Golem(spawn_x, spawn_y - 110.f); break;
+        default: new_enemy = new Phoenix(spawn_x, spawn_y - 180.f); break;
+        }
+    }
+
+    if (new_enemy != nullptr)
+    {
+        new_enemy->setDifficulty(difficulty);
+        enemies.push_back(new_enemy);
+        enemy_respawn_number++;
+        enemy_respawn_timer = 0.f;
+    }
 }
 
 // Load a region: build its level, add its enemies, put the player at its start
@@ -638,14 +776,14 @@ void Engine::update()
         if (enemy->hurtsOnContact()
             && player.getBounds().findIntersection(enemy->getBounds()))
         {
-            player.takeDamage(1, push_dir);
+            player.takeDamage(enemy->getAttackDamage(), push_dir);
         }
 
         sf::FloatRect attack_box;
         if (enemy->getAttackHitbox(attack_box)
             && player.getBounds().findIntersection(attack_box))
         {
-            player.takeDamage(1, push_dir);
+            player.takeDamage(enemy->getAttackDamage(), push_dir);
         }
     }
 
@@ -697,6 +835,8 @@ void Engine::update()
         if (!spikes[i].isAlive())
             spikes.erase(spikes.begin() + i);
     }
+
+    respawnEnemy(delta_time);
 
     if (player.getHealth() < health_before_combat)
     {
