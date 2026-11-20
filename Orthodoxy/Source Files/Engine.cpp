@@ -123,6 +123,7 @@ void Engine::startGame()
 {
     blinking = false;
     total_kills = 0;
+    total_seconds = 0.f;
     scrolls = 0;
     collected_total = 0;
     for (int i = 0; i < 8; i++)
@@ -161,11 +162,11 @@ void Engine::spawnEnemies()
     else if (level.getRegion() == Region::RedMoonRuins)
     {
         difficulty = 2;
-        enemies.push_back(new Golem(900.f, 885.f));
+        enemies.push_back(new Skeleton(900.f, 911.f));
         enemies.push_back(new BurstSpirit(1700.f, 700.f));
         enemies.push_back(new BurstSpirit(2700.f, 650.f));
         enemies.push_back(new Phoenix(3300.f, 400.f));
-        enemies.push_back(new Golem(4780.f, 825.f));
+        enemies.push_back(new Phoenix(4780.f, 450.f));
         enemies.push_back(new Skeleton(550.f, 780.f));
         enemies.push_back(new Skeleton(2900.f, 840.f));
     }
@@ -175,7 +176,14 @@ void Engine::spawnEnemies()
         enemies.push_back(new Skeleton(560.f, 750.f));
         enemies.push_back(new Golem(1700.f, 790.f));
         enemies.push_back(new Phoenix(2450.f, 380.f));
+        enemies.push_back(new BurstSpirit(3000.f, 560.f));
         enemies.push_back(new Skeleton(3350.f, 750.f));
+    }
+    else if (level.getRegion() == Region::BossRoom)
+    {
+        difficulty = 3;
+        // The boss stands on the arena floor (the floor is at y = 900, the boss is 104 tall)
+        enemies.push_back(new DraconicLord(1400.f, 796.f));
     }
 
     for (Enemy* enemy : enemies)
@@ -184,6 +192,10 @@ void Engine::spawnEnemies()
 
 void Engine::respawnEnemy(float delta_time)
 {
+    // The boss fight has no extra enemies
+    if (level.getRegion() == Region::BossRoom)
+        return;
+
     int minimum = 2;
     int maximum = 5;
     float delay = 14.f;
@@ -279,20 +291,22 @@ void Engine::respawnEnemy(float delta_time)
     }
     else if (level.getRegion() == Region::RedMoonRuins)
     {
-        switch (enemy_respawn_number % 4)
+        // Level 2: Skeleton, BurstSpirit and Phoenix only (no Golem)
+        switch (enemy_respawn_number % 3)
         {
         case 0: new_enemy = new Skeleton(spawn_x, spawn_y - 84.f); break;
         case 1: new_enemy = new BurstSpirit(spawn_x, spawn_y - 130.f); break;
-        case 2: new_enemy = new Golem(spawn_x, spawn_y - 110.f); break;
         default: new_enemy = new Phoenix(spawn_x, spawn_y - 180.f); break;
         }
     }
     else
     {
-        switch (enemy_respawn_number % 3)
+        // Level 3: every enemy type
+        switch (enemy_respawn_number % 4)
         {
         case 0: new_enemy = new Skeleton(spawn_x, spawn_y - 84.f); break;
-        case 1: new_enemy = new Golem(spawn_x, spawn_y - 110.f); break;
+        case 1: new_enemy = new BurstSpirit(spawn_x, spawn_y - 130.f); break;
+        case 2: new_enemy = new Golem(spawn_x, spawn_y - 110.f); break;
         default: new_enemy = new Phoenix(spawn_x, spawn_y - 180.f); break;
         }
     }
@@ -512,6 +526,16 @@ void Engine::handleKey(sf::Keyboard::Key key)
         return;
     }
 
+    if (state == GameState::Victory)
+    {
+        if (key == K::Enter || key == K::Space || key == K::Escape)
+        {
+            state = GameState::MainMenu;
+            menu_index = 0;
+        }
+        return;
+    }
+
     if (state == GameState::Upgrades)
     {
         if (key == K::Escape || key == K::U)
@@ -647,18 +671,21 @@ void Engine::drawControls()
     uiText(window, heading, "MOVEMENT", 18, 197.f, 151.f, gold);
     uiText(window, heading, "COMBAT", 18, 502.f, 151.f, gold);
 
-    const char* move_keys[5] = { "A / D", "SPACE", "S", "SHIFT", "E" };
-    const char* move_actions[5] = { "Move left / right", "Jump / double jump", "Crouch", "Dash", "Use portal" };
+    const char* move_keys[6] = { "A / D", "SPACE", "S", "SHIFT", "E", "S + SPACE" };
+    const char* move_actions[6] = { "Move left / right", "Jump / double jump", "Crouch", "Dash", "Use portal", "Drop through platform" };
     const char* fight_keys[5] = { "J", "HOLD K", "U", "F5", "F9" };
     const char* fight_actions[5] = { "Light sword attack", "Heavy attack (0.50s)", "Open upgrades", "Save game", "Load game" };
 
-    for (int i = 0; i < 5; i++)
+    for (int i = 0; i < 6; i++)
     {
-        float y = 192.f + i * 39.f;
+        float y = 192.f + i * 34.f;
         uiText(window, font, move_keys[i], 15, 197.f, y, gold);
-        uiText(window, font, move_actions[i], 14, 272.f, y, parchment);
-        uiText(window, font, fight_keys[i], 15, 502.f, y, gold);
-        uiText(window, font, fight_actions[i], 14, 584.f, y, parchment);
+        uiText(window, font, move_actions[i], 14, 290.f, y, parchment);
+        if (i < 5)
+        {
+            uiText(window, font, fight_keys[i], 15, 502.f, y, gold);
+            uiText(window, font, fight_actions[i], 14, 584.f, y, parchment);
+        }
     }
 
     uiRule(window, 192.f, 401.f, 576.f);
@@ -738,6 +765,7 @@ void Engine::update()
 
     // Stage timer mein har frame ke actual seconds add hote hain; timer FPS se independent rehta hai.
     stage_seconds += delta_time;
+    total_seconds += delta_time;
     if (save_message_timer > 0.f)
         save_message_timer -= delta_time;
 
@@ -749,7 +777,7 @@ void Engine::update()
             combo_hits = 0;
     }
 
-    player.update(delta_time, level.getPlatforms(), level.getWidth());
+    player.update(delta_time, level.getPlatforms(), level.getWidth(), level.getHeight());
     collectScrolls();
     int health_before_combat = player.getHealth();
     Extras::updateSound(Extras::nearDoor(player.getCenter(), level));
@@ -812,10 +840,13 @@ void Engine::update()
         }
     }
 
+    bool boss_defeated = false;
     for (int i = (int)enemies.size() - 1; i >= 0; i--)
     {
         if (!enemies[i]->isAlive())
         {
+            if (enemies[i]->isBoss() && enemies[i]->wasDefeatedByPlayer())
+                boss_defeated = true;
             if (enemies[i]->wasDefeatedByPlayer())
             {
                 ++stage_kills;
@@ -834,6 +865,14 @@ void Engine::update()
     {
         if (!spikes[i].isAlive())
             spikes.erase(spikes.begin() + i);
+    }
+
+    // The boss is down: show the victory screen
+    if (boss_defeated)
+    {
+        state = GameState::Victory;
+        clock.restart();
+        return;
     }
 
     respawnEnemy(delta_time);
@@ -860,7 +899,9 @@ std::string Engine::currentObjective() const
         return "Reach the gate to Red Moon Ruins";
     if (level.getRegion() == Region::RedMoonRuins)
         return "Find the portal to the Cathedral";
-    return "Explore the Cathedral";
+    if (level.getRegion() == Region::Cathedral)
+        return "Reach the portal to the boss";
+    return "Defeat the Draconic Lord";
 }
 
 void Engine::drawHUD()
@@ -895,6 +936,23 @@ void Engine::drawHUD()
     uiText(window, font, "STAGE TIME", 13, 818.f, 20.f, muted);
     uiText(window, title_font_loaded ? title_font : font,
         stageClock(stage_seconds), 21, 818.f, 36.f, gold);
+
+    // Boss health bar at the top of the screen while the boss is alive
+    for (Enemy* enemy : enemies)
+    {
+        if (!enemy->isBoss())
+            continue;
+        uiPanel(window, 365.f, 10.f, 430.f, 52.f);
+        uiText(window, font, "THE DRACONIC LORD", 13, 580.f, 19.f, gold, true);
+        sf::RectangleShape boss_track({ 390.f, 9.f });
+        boss_track.setPosition({ 385.f, 42.f });
+        boss_track.setFillColor(sf::Color(65, 53, 56));
+        window.draw(boss_track);
+        sf::RectangleShape boss_fill({ 390.f * enemy->getHealthFraction(), 9.f });
+        boss_fill.setPosition({ 385.f, 42.f });
+        boss_fill.setFillColor(crimson);
+        window.draw(boss_fill);
+    }
 
     if (player.getHeavyCharge() > 0.f)
     {
@@ -934,8 +992,11 @@ void Engine::drawStageCleared()
     uiPanel(window, 232.f, 82.f, 496.f, 375.f);
     uiText(window, font, "THE PENANCE CONTINUES", 13, 480.f, 102.f, muted, true);
     uiText(window, headingFont, "STAGE CLEARED", 38, 480.f, 126.f, gold, true);
-    std::string area = cleared_region == Region::AshenBarrow
-        ? "ASHEN BARROW" : "RED MOON RUINS";
+    std::string area = "RED MOON RUINS";
+    if (cleared_region == Region::AshenBarrow)
+        area = "ASHEN BARROW";
+    else if (cleared_region == Region::Cathedral)
+        area = "THE CATHEDRAL";
     uiText(window, headingFont, area, 19, 480.f, 181.f, parchment, true);
     uiRule(window, 270.f, 215.f, 420.f);
 
@@ -956,6 +1017,49 @@ void Engine::drawStageCleared()
         15, 480.f, 367.f, gold, true);
     uiText(window, font, "PRESS ENTER TO CONTINUE", 18, 480.f,
         416.f, gold, true);
+}
+
+// Shown when the Draconic Lord is defeated
+void Engine::drawVictory()
+{
+    window.setView(ui_view);
+    window.clear(ink);
+    sf::RectangleShape glow({ 960.f, 215.f });
+    glow.setPosition({ 0.f, 325.f });
+    glow.setFillColor(sf::Color(67, 23, 38, 80));
+    window.draw(glow);
+    if (!font_loaded)
+        return;
+
+    const sf::Font& headingFont = title_font_loaded ? title_font : font;
+    // The boss stage time is stage_seconds; the stages before it are whatever is left of the total
+    float stages_seconds = total_seconds - stage_seconds;
+    if (stages_seconds < 0.f)
+        stages_seconds = 0.f;
+
+    uiPanel(window, 232.f, 52.f, 496.f, 436.f);
+    uiText(window, font, "THE PENANCE IS COMPLETE", 13, 480.f, 72.f, muted, true);
+    uiText(window, headingFont, "VICTORY", 44, 480.f, 94.f, gold, true);
+    uiText(window, headingFont, "THE DRACONIC LORD HAS FALLEN", 17, 480.f, 156.f, parchment, true);
+    uiRule(window, 270.f, 190.f, 420.f);
+
+    uiText(window, font, "TOTAL TIME", 12, 480.f, 204.f, muted, true);
+    uiText(window, headingFont, stageClock(total_seconds), 32, 480.f, 220.f, gold, true);
+
+    const float left = 284.f, right = 524.f;
+    uiText(window, font, "STAGES 1 - 3", 12, left, 274.f, muted);
+    uiText(window, headingFont, stageClock(stages_seconds), 24, left, 290.f, parchment);
+    uiText(window, font, "BOSS FIGHT", 12, right, 274.f, muted);
+    uiText(window, headingFont, stageClock(stage_seconds), 24, right, 290.f, parchment);
+
+    uiText(window, font, "SCROLLS COLLECTED", 12, left, 338.f, muted);
+    uiText(window, headingFont, std::to_string(collected_total) + " / 8", 24, left, 354.f, gold);
+    uiText(window, font, "UNDEAD BANISHED", 12, right, 338.f, muted);
+    uiText(window, headingFont, std::to_string(total_kills), 24, right, 354.f, gold);
+
+    uiRule(window, 270.f, 398.f, 420.f);
+    uiText(window, font, "BEST COMBO  x" + std::to_string(best_combo), 15, 480.f, 410.f, parchment, true);
+    uiText(window, font, "PRESS ENTER TO RETURN TO THE MENU", 17, 480.f, 440.f, gold, true);
 }
 
 void Engine::collectScrolls()
@@ -1057,6 +1161,12 @@ void Engine::render()
         window.display();
         return;
     }
+    if (state == GameState::Victory)
+    {
+        drawVictory();
+        window.display();
+        return;
+    }
     if (state == GameState::MainMenu)
     {
         window.clear(sf::Color::Black);
@@ -1139,6 +1249,7 @@ bool Engine::saveGame()
     file << stage_kills << ' ' << stage_relics << ' ' << best_combo << ' ' << stage_seconds << '\n';
     for (int i = 0; i < 8; i++) file << (collected_scrolls[i] ? 1 : 0) << ' ';
     file << '\n';
+    file << total_seconds << '\n';
     file.close();
 
     if (!file)
@@ -1178,8 +1289,16 @@ bool Engine::loadGame()
     for (int i = 0; i < 8; i++) file >> flags[i];
 
     bool valid = (bool)file;
+    // The total time was added later: an older save does not have it, so use the stage time then
+    float savedTotal = savedTime;
+    if (valid)
+    {
+        float readTotal = 0.f;
+        if (file >> readTotal && readTotal >= savedTime && readTotal < 100000000.f)
+            savedTotal = readTotal;
+    }
     if (version != "ORTHODOXY_SAVE_V1") valid = false;
-    if (regionNumber < 0 || regionNumber > 2) valid = false;
+    if (regionNumber < 0 || regionNumber > 3) valid = false;
     if (!(x >= 0.f && x <= 7000.f && y >= -1000.f && y <= 1500.f)) valid = false;
     if (health < 1 || health > 9) valid = false;
     for (int i = 0; i < 4; i++)
@@ -1215,6 +1334,7 @@ bool Engine::loadGame()
     stage_relics = savedRelics;
     best_combo = savedCombo;
     stage_seconds = savedTime;
+    total_seconds = savedTotal;
     combo_hits = 0;
     combo_timer = 0.f;
     for (int i = 0; i < 8; i++) collected_scrolls[i] = (flags[i] == 1);

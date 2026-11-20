@@ -23,7 +23,7 @@ Player::Player() : sprite(sheet_texture)
 // Runs every frame: reads the keys, moves the knight, handles collisions and picks the animation
 void Player::update(
     float delta_time, const std::vector<sf::RectangleShape>& solids,
-    float world_width
+    float world_width, float world_height
 )
 {
     // Base speed 200 hai; har extra Agility level par 12 add karte hain. Agility 1 par bonus zero hota hai.
@@ -230,7 +230,29 @@ void Player::update(
         coyote_timer -= delta_time;
     }
 
-    if (jump_pressed && !is_dashing && !near_wall)
+    // ---- Drop through a thin platform: S + Space while standing on it ----
+    bool drop_started = false;
+    if (jump_pressed && crouch_held && is_on_ground && !is_dashing && !near_wall && drop_timer <= 0.f)
+    {
+        std::vector<sf::FloatRect> standing_on;
+        if (findDropPlatforms(solids, world_height, standing_on))
+        {
+            drop_ignored = standing_on;
+            drop_timer = drop_time;
+            velocity_y = drop_start_speed;   // start falling right away
+            is_on_ground = false;
+            coyote_timer = 0.f;
+            drop_started = true;             // this Space press was the drop, not a jump
+        }
+    }
+    if (drop_timer > 0.f)
+    {
+        drop_timer -= delta_time;
+        if (drop_timer <= 0.f)
+            drop_ignored.clear();            // the platform is solid again
+    }
+
+    if (jump_pressed && !is_dashing && !near_wall && !drop_started)
     {
         if (coyote_timer > 0.f)
         {
@@ -287,6 +309,8 @@ void Player::update(
         {
             sf::FloatRect player_box = shape.getGlobalBounds();
             sf::FloatRect solid_box = solid.getGlobalBounds();
+            if (isDropIgnored(solid_box))
+                continue;   // we are falling through this platform
             if (player_box.findIntersection(solid_box))
             {
                 if (move_x > 0.f)   // moving right: stop at the solid's left side
@@ -307,6 +331,8 @@ void Player::update(
     {
         sf::FloatRect player_box = shape.getGlobalBounds();
         sf::FloatRect solid_box = solid.getGlobalBounds();
+        if (isDropIgnored(solid_box))
+            continue;   // we are falling through this platform
         if (player_box.findIntersection(solid_box))
         {
             if (velocity_y > 0.f)   // falling: land on top of the solid
@@ -335,6 +361,8 @@ void Player::update(
         );
         for (const auto& solid : solids)
         {
+            if (isDropIgnored(solid.getGlobalBounds()))
+                continue;   // not standing on a platform we are dropping through
             if (probe.findIntersection(solid.getGlobalBounds()))
             {
                 is_on_ground = true;
@@ -740,6 +768,62 @@ float Player::detectWall(const std::vector<sf::RectangleShape>& solids) const
     return 0.f;
 }
 
+// Is this solid one of the platforms we are dropping through right now?
+bool Player::isDropIgnored(const sf::FloatRect& solid_box) const
+{
+    for (const auto& ignored : drop_ignored)
+    {
+        if (ignored == solid_box)
+            return true;
+    }
+    return false;
+}
+
+// Can we drop through what we stand on? Fills 'standing_on' with the platform(s) under the feet.
+// It only works on thin platforms, and only if there is something below to land on
+// (so the knight never drops out of the level).
+bool Player::findDropPlatforms(const std::vector<sf::RectangleShape>& solids, float world_height,
+    std::vector<sf::FloatRect>& standing_on) const
+{
+    sf::Vector2f pos = shape.getPosition();
+    sf::Vector2f size = shape.getSize();
+    float feet_y = pos.y + size.y;
+    sf::FloatRect feet_probe({ pos.x, pos.y + 1.f }, size);
+
+    for (const auto& solid : solids)
+    {
+        sf::FloatRect solid_box = solid.getGlobalBounds();
+        if (!feet_probe.findIntersection(solid_box))
+            continue;
+        if (solid_box.size.y > thin_platform_height)
+            return false;   // a real floor, not a platform
+        standing_on.push_back(solid_box);
+    }
+    if (standing_on.empty())
+        return false;
+
+    // Look for a landing spot below: lower than the feet, under the knight, and not at the very bottom of the level
+    for (const auto& solid : solids)
+    {
+        sf::FloatRect solid_box = solid.getGlobalBounds();
+        bool is_current = false;
+        for (const auto& current : standing_on)
+        {
+            if (current == solid_box)
+                is_current = true;
+        }
+        if (is_current)
+            continue;
+        bool below = solid_box.position.y > feet_y + 20.f;
+        bool under_knight = solid_box.position.x < pos.x + size.x
+            && solid_box.position.x + solid_box.size.x > pos.x;
+        bool not_the_void_floor = solid_box.position.y < world_height - 40.f;   // the safety floor at the very bottom does not count
+        if (below && under_knight && not_the_void_floor)
+            return true;
+    }
+    return false;
+}
+
 bool Player::canStandUp(const std::vector<sf::RectangleShape>& solids) const
 {
     // Imagine the tall standing box with feet in the same place
@@ -776,6 +860,8 @@ void Player::reset(sf::Vector2f spawn)
     is_clinging = false;
     is_crouching = false;
     can_dash = true;
+    drop_timer = 0.f;
+    drop_ignored.clear();
 }
 
 

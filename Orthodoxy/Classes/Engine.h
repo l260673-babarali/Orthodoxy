@@ -11,8 +11,8 @@
 #include <stdexcept>
 #include <iostream>
 
-// The three screens of the game
-enum class GameState { MainMenu, Playing, Paused, StageCleared, Upgrades, Controls };
+// The screens of the game
+enum class GameState { MainMenu, Playing, Paused, StageCleared, Upgrades, Controls, Victory };
 
 // Runs the whole game: window, main loop, menus, and everything that lives in the world
 class Engine
@@ -45,7 +45,8 @@ private:
     int total_kills = 0;
     int stage_kills = 0;
     int stage_relics = 0;
-    float stage_seconds = 0.f;
+    float stage_seconds = 0.f;      // time spent in the current stage
+    float total_seconds = 0.f;      // time spent in the whole game (all stages + the boss)
     int combo_hits = 0;
     int best_combo = 0;
     float combo_timer = 0.f;
@@ -56,9 +57,11 @@ private:
     int upgrade_index = 0;
     bool collected_scrolls[8] = {};
     const sf::Vector2f scroll_positions[8] = {
-        { 350.f, 690.f }, { 1650.f, 805.f }, { 4700.f, 495.f },
+        // 8 scrolls spread over the whole game: 3 in Ashen Barrow, 3 in Red Moon Ruins, 2 in the Cathedral
+        // Each one sits just above a platform, near the start, the middle and the end of its region.
+        { 350.f, 690.f }, { 3086.f, 555.f }, { 5800.f, 629.f },
         { 400.f, 825.f }, { 2700.f, 660.f }, { 4810.f, 505.f },
-        { 350.f, 700.f }, { 1700.f, 700.f }
+        { 350.f, 700.f }, { 3355.f, 590.f }
     };
 
 
@@ -76,6 +79,7 @@ private:
     void render();
     void drawHUD();
     void drawStageCleared();
+    void drawVictory();
     void drawScrolls();
     void collectScrolls();
     void drawUpgrades();

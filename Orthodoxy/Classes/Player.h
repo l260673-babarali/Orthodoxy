@@ -23,6 +23,16 @@ private:
     static constexpr float crouch_speed_multiplier = 0.45f; // crouch walk is slower
     bool canStandUp(const std::vector<sf::RectangleShape>& solids) const;
 
+    // Drop through a thin platform: hold S and press Space while standing on it
+    float drop_timer = 0.f;                      // while above 0 we fall through the platform we stood on
+    std::vector<sf::FloatRect> drop_ignored;     // the platform(s) we are falling through
+    static constexpr float thin_platform_height = 20.f;   // only thin platforms can be dropped through (not real floors)
+    static constexpr float drop_time = 0.4f;     // long enough for the whole body to get below the platform
+    static constexpr float drop_start_speed = 200.f;
+    bool findDropPlatforms(const std::vector<sf::RectangleShape>& solids, float world_height,
+        std::vector<sf::FloatRect>& standing_on) const;
+    bool isDropIgnored(const sf::FloatRect& solid_box) const;
+
     // Dash
     bool can_dash = true;           // one dash per jump; refilled when we touch the ground
     bool is_dashing = false;
@@ -109,7 +119,8 @@ public:
     void update(
         float delta_time,
         const std::vector<sf::RectangleShape>& solids,
-        float world_width
+        float world_width,
+        float world_height
     );
 
     void draw(sf::RenderWindow& window);

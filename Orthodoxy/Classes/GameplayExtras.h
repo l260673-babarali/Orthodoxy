@@ -134,6 +134,18 @@ namespace Extras
             // Door bahut oopar hai; message visible rakhte hain.
             promptPosition = { x - 10.f, y + 440.f };
         }
+        else if (level.getRegion() == Region::Cathedral)
+        {
+            // The cathedral picture has no portal painted in it, so the portal picture is drawn here.
+            sf::FloatRect trigger = level.getDoorTrigger();
+            if (doorTexture.getSize().x != 0)
+            {
+                sf::Sprite gate(doorTexture);
+                gate.setPosition({ trigger.position.x + 40.f, trigger.position.y });
+                window.draw(gate);
+            }
+            promptPosition = { trigger.position.x + 10.f, trigger.position.y - 30.f };
+        }
         else
         {
             // Red Moon Ruins: the portal is already painted in scene7,
