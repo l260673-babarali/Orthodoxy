@@ -2,11 +2,12 @@
 #include <SFML/Graphics.hpp>
 #include <vector>
 
-// The game has 3 regions, played in this order:
+// The game has 4 regions, played in this order:
 //   0 = Ashen Barrow   (the first outdoor level)
 //   1 = Red Moon Ruins (scene5, scene6, scene7)
 //   2 = Cathedral
-enum class Region { AshenBarrow = 0, RedMoonRuins = 1, Cathedral = 2 };
+//   3 = Boss room (the Draconic Lord's arena)
+enum class Region { AshenBarrow = 0, RedMoonRuins = 1, Cathedral = 2, BossRoom = 3 };
 
 class Level {
     // 0-3 scene1-4, 4-6 continuation1-3, 7-9 cathedral1-3, 10-12 scene5-7
@@ -17,6 +18,7 @@ class Level {
     void buildAshenBarrow();
     void buildRedMoonRuins();
     void buildCathedral();
+    void buildBossRoom();
 public:
     Level();
     void reset();                       // back to the first region

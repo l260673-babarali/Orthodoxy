@@ -3,6 +3,7 @@
 Enemy::Enemy(sf::Vector2f position, sf::Vector2f size, sf::Color color, int start_health)
     : base_color(color), health(start_health)
 {
+    max_health = start_health;
     shape.setSize(size);
     shape.setPosition(position);
     shape.setFillColor(color);
@@ -141,6 +142,7 @@ void Enemy::setDifficulty(int level)
 {
     difficulty_level = level;
     health += (level - 1) * 2;
+    max_health = health;
 }
 
 int Enemy::getAttackDamage() const
@@ -148,6 +150,17 @@ int Enemy::getAttackDamage() const
     if (difficulty_level == 3)
         return 2;
     return 1;
+}
+
+float Enemy::getHealthFraction() const
+{
+    if (max_health <= 0 || health <= 0)
+        return 0.f;
+    // Health bar fill = current health / health at the start; never above 1
+    float fraction = static_cast<float>(health) / max_health;
+    if (fraction > 1.f)
+        fraction = 1.f;
+    return fraction;
 }
 
 bool Enemy::isAlive() const { return alive; }
@@ -918,6 +931,312 @@ bool Skeleton::getAttackHitbox(sf::FloatRect& box) const
     if (state == State::Leap)
     {
         box = sf::FloatRect({ pos.x - 10.f, pos.y - 5.f }, { size.x + 20.f, size.y + 10.f });
+        return true;
+    }
+    return false;
+}
+
+
+
+// ===========================================================================
+// DraconicLord (final boss)
+// ===========================================================================
+namespace
+{
+    const sf::Color lord_color(140, 35, 45);          // dark dragon red
+    const sf::Color lord_scale_color(90, 200, 140);   // the flying dragon scales
+    const sf::Color lord_fire_color(255, 140, 30);
+    const float lord_pi = 3.14159265f;
+}
+
+DraconicLord::DraconicLord(float x, float y)
+    : Enemy({ x, y }, { 56.f, 104.f }, lord_color, 30)
+{
+    knockback_speed = 40.f;   // a boss barely gets pushed
+}
+
+// Pick one of the 5 attacks (not the one used last time) and start its warning
+void DraconicLord::chooseAttack()
+{
+    int attack = (last_attack + 1 + std::rand() % 4) % 5;
+    last_attack = attack;
+    state_timer = 0.f;
+
+    switch (attack)
+    {
+    case 0: state = State::ScalesWindup; break;
+    case 1: state = State::StrikeWindup; break;
+    case 2: state = State::FireballWindup; break;
+    case 3: state = State::BladeWindup; break;
+    default: state = State::FireWindup; break;
+    }
+}
+
+// Never walk or dash out of the room
+void DraconicLord::clampToArena()
+{
+    sf::Vector2f pos = shape.getPosition();
+    float width = shape.getSize().x;
+    if (pos.x < arena_left)
+        shape.setPosition({ arena_left, pos.y });
+    if (pos.x + width > arena_right)
+        shape.setPosition({ arena_right - width, pos.y });
+}
+
+void DraconicLord::update(float delta_time, const std::vector<sf::RectangleShape>& solids,
+    sf::Vector2f player_center, EnemyWorld& world)
+{
+    if (!alive)
+        return;
+
+    updateHurtFlash(delta_time);
+    state_timer += delta_time;
+    if (attack_cooldown > 0.f) attack_cooldown -= delta_time;
+
+    moveHorizontal(consumeKnockback(delta_time), solids);
+
+    sf::Vector2f center = getCenter();
+    float dx = player_center.x - center.x;
+
+    switch (state)
+    {
+    case State::Walk:
+        base_color = lord_color;
+        facing = (dx >= 0.f) ? 1.f : -1.f;
+        if (std::abs(dx) > stop_range)
+            moveHorizontal(facing * walk_speed * delta_time, solids);
+        if (attack_cooldown <= 0.f)
+            chooseAttack();
+        break;
+
+    // ---- 0: Dragon scales ----
+    case State::ScalesWindup:
+        base_color = sf::Color(120, 230, 170);   // green = scales are coming
+        facing = (dx >= 0.f) ? 1.f : -1.f;
+        if (state_timer >= scales_windup_time)
+        {
+            throwScales(world);
+            state = State::Recover;
+            state_timer = 0.f;
+        }
+        break;
+
+    // ---- 1: Draconic strike (dash slash) ----
+    case State::StrikeWindup:
+        base_color = sf::Color(255, 230, 120);   // yellow = about to dash (dodge through it!)
+        facing = (dx >= 0.f) ? 1.f : -1.f;       // aims at the player, then the direction is locked
+        if (state_timer >= strike_windup_time)
+        {
+            state = State::StrikeDash;
+            state_timer = 0.f;
+        }
+        break;
+
+    case State::StrikeDash:
+        base_color = sf::Color(255, 150, 80);
+        moveHorizontal(facing * strike_speed * delta_time, solids);
+        if (state_timer >= strike_dash_time)
+        {
+            state = State::Recover;
+            state_timer = 0.f;
+        }
+        break;
+
+    // ---- 2: Fireball ----
+    case State::FireballWindup:
+        base_color = sf::Color(255, 170, 60);    // orange = about to throw fire
+        facing = (dx >= 0.f) ? 1.f : -1.f;
+        if (state_timer >= fireball_windup_time)
+        {
+            throwFireball(player_center, world);
+            state = State::Recover;
+            state_timer = 0.f;
+        }
+        break;
+
+    // ---- 3: Planted blade ----
+    case State::BladeWindup:
+        base_color = sf::Color(190, 200, 230);   // steel = about to throw the blade
+        facing = (dx >= 0.f) ? 1.f : -1.f;
+        if (state_timer >= blade_windup_time)
+        {
+            // The blade lands where the player stands right now. Move away before it explodes!
+            blade_x = player_center.x;
+            ground_y = shape.getPosition().y + shape.getSize().y;
+            state = State::BladePlanted;
+            state_timer = 0.f;
+        }
+        break;
+
+    case State::BladePlanted:
+        base_color = lord_color;
+        if (state_timer >= blade_planted_time)
+        {
+            state = State::BladeExplode;
+            state_timer = 0.f;
+        }
+        break;
+
+    case State::BladeExplode:
+        base_color = lord_color;
+        if (state_timer >= blade_explode_time)
+        {
+            state = State::Recover;
+            state_timer = 0.f;
+        }
+        break;
+
+    // ---- 4: Burning ground ----
+    case State::FireWindup:
+        base_color = sf::Color(255, 70, 40);     // red = the floor is about to burn
+        ground_y = shape.getPosition().y + shape.getSize().y;
+        if (state_timer >= fire_windup_time)
+        {
+            state = State::FireBurning;
+            state_timer = 0.f;
+        }
+        break;
+
+    case State::FireBurning:
+        base_color = lord_color;
+        if (state_timer >= fire_burn_time)
+        {
+            state = State::Recover;
+            state_timer = 0.f;
+        }
+        break;
+
+    case State::Recover:
+        base_color = lord_color;
+        if (state_timer >= recover_time)
+        {
+            attack_cooldown = attack_pause;
+            state = State::Walk;
+            state_timer = 0.f;
+        }
+        break;
+    }
+
+    clampToArena();
+    applyGravity(delta_time, solids);
+}
+
+// A ring of scales flying out in every direction
+void DraconicLord::throwScales(EnemyWorld& world)
+{
+    sf::Vector2f center = getCenter();
+    for (int i = 0; i < scale_count; i++)
+    {
+        // Angles are spread evenly around the full circle (2 x pi divided by the number of scales)
+        float angle = i * 2.f * lord_pi / scale_count;
+        sf::Vector2f direction(std::cos(angle), std::sin(angle));
+        world.projectiles.push_back(
+            Projectile(center + direction * 40.f, { scale_size, scale_size }, direction * scale_speed,
+                0.f, 1, lord_scale_color, scale_life));
+    }
+}
+
+// One big ball of fire, aimed at the player
+void DraconicLord::throwFireball(sf::Vector2f player_center, EnemyWorld& world)
+{
+    sf::Vector2f start(getCenter().x + facing * 40.f, getCenter().y - 20.f);
+    sf::Vector2f to_player = player_center - start;
+    float length = std::sqrt(to_player.x * to_player.x + to_player.y * to_player.y);
+    sf::Vector2f direction(facing, 0.f);
+    if (length > 0.f)
+        direction = to_player / length;
+    world.projectiles.push_back(
+        Projectile(start, { fireball_size, fireball_size }, direction * fireball_speed,
+            0.f, 1, lord_fire_color, 3.f));
+}
+
+void DraconicLord::draw(sf::RenderWindow& window)
+{
+    if (!alive)
+        return;
+
+    // ---- Warnings that lie on the floor (drawn first, so the boss stands in front of them) ----
+    if (state == State::BladePlanted || state == State::BladeExplode)
+    {
+        // The danger area slowly gets redder while the blade waits
+        float fuse = state_timer / blade_planted_time;
+        if (state == State::BladeExplode || fuse > 1.f)
+            fuse = 1.f;
+        sf::RectangleShape area({ explosion_width, explosion_height });
+        area.setPosition({ blade_x - explosion_width / 2.f, ground_y - explosion_height });
+        area.setFillColor(sf::Color(255, 60, 30, static_cast<unsigned char>(30 + 80 * fuse)));
+        area.setOutlineColor(sf::Color(255, 90, 40, 160));
+        area.setOutlineThickness(2.f);
+        window.draw(area);
+
+        // The blade stuck in the ground (a thin blade with a cross guard on top)
+        sf::RectangleShape blade({ 12.f, 90.f });
+        blade.setPosition({ blade_x - 6.f, ground_y - 90.f });
+        blade.setFillColor(sf::Color(200, 210, 235));
+        window.draw(blade);
+        sf::RectangleShape guard({ 40.f, 8.f });
+        guard.setPosition({ blade_x - 20.f, ground_y - 96.f });
+        guard.setFillColor(sf::Color(170, 140, 60));
+        window.draw(guard);
+    }
+    if (state == State::FireWindup)
+    {
+        // The whole floor glows, it flickers faster and faster
+        int glow = 60 + static_cast<int>(60 * std::abs(std::sin(state_timer * 10.f)));
+        sf::RectangleShape floor_glow({ arena_right - arena_left, fire_height });
+        floor_glow.setPosition({ arena_left, ground_y - fire_height });
+        floor_glow.setFillColor(sf::Color(255, 90, 30, static_cast<unsigned char>(glow)));
+        window.draw(floor_glow);
+    }
+    if (state == State::FireBurning)
+    {
+        // A row of flickering flame boxes along the whole floor
+        for (float x = arena_left; x < arena_right; x += 40.f)
+        {
+            float flicker = 0.6f + 0.4f * std::sin(state_timer * 12.f + x * 0.05f);
+            float flame_height = fire_height * flicker;
+            sf::RectangleShape flame({ 40.f, flame_height });
+            flame.setPosition({ x, ground_y - flame_height });
+            flame.setFillColor(sf::Color(255, static_cast<unsigned char>(90 + 80 * flicker), 20, 200));
+            window.draw(flame);
+        }
+    }
+
+    // ---- The boss himself ----
+    Enemy::draw(window);
+
+    // A little dark square on the side he is facing (so we can see where he looks)
+    sf::RectangleShape eye({ 12.f, 10.f });
+    float eye_x = (facing > 0.f) ? shape.getPosition().x + shape.getSize().x - 16.f
+                                 : shape.getPosition().x + 4.f;
+    eye.setPosition({ eye_x, shape.getPosition().y + 16.f });
+    eye.setFillColor(sf::Color(255, 220, 80));
+    window.draw(eye);
+}
+
+// Hurts only during: the dash slash, the blade explosion, and while the floor burns
+bool DraconicLord::getAttackHitbox(sf::FloatRect& box) const
+{
+    sf::Vector2f pos = shape.getPosition();
+    sf::Vector2f size = shape.getSize();
+
+    if (state == State::StrikeDash)
+    {
+        // The body plus the slash reaching out in front of it
+        float x = (facing > 0.f) ? pos.x : pos.x - strike_reach;
+        box = sf::FloatRect({ x, pos.y - 5.f }, { size.x + strike_reach, size.y + 10.f });
+        return true;
+    }
+    if (state == State::BladeExplode)
+    {
+        box = sf::FloatRect({ blade_x - explosion_width / 2.f, ground_y - explosion_height },
+            { explosion_width, explosion_height });
+        return true;
+    }
+    if (state == State::FireBurning)
+    {
+        box = sf::FloatRect({ arena_left, ground_y - fire_height },
+            { arena_right - arena_left, fire_height });
         return true;
     }
     return false;

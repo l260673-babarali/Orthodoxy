@@ -12,6 +12,7 @@ const float EXTERIOR_WIDTH = 2172.f * OLD_SCALE + 3.f * CONTINUATION_WIDTH;
 const float RUINS_SCENE_WIDTH = 1940.f; // each red-moon-ruins picture (scene5, 6, 7) is stretched to this width
 // Red Moon total width = 3 scene widths; 3 backgrounds side by side hain.
 const float RUINS_WIDTH = 3.f * RUINS_SCENE_WIDTH;
+const float BOSS_ROOM_WIDTH = 1920.f; // must match arena_left / arena_right of the DraconicLord in Enemy.h
 
 void Level::addSolid(float x, float y, float width, float height)
 {
@@ -67,7 +68,8 @@ void Level::setRegion(Region newRegion)
     platforms.clear();
     if (region == Region::AshenBarrow)       buildAshenBarrow();
     else if (region == Region::RedMoonRuins) buildRedMoonRuins();
-    else                                     buildCathedral();
+    else if (region == Region::Cathedral)    buildCathedral();
+    else                                     buildBossRoom();
 }
 
 // Ashen platforms ke addSolid(x,y,width,height) world coordinates hain; OLD_SCALE x position, y aur width ko same proportion se barhata hai. Values ko change nahi kiya.
@@ -219,6 +221,12 @@ void Level::buildCathedral()
     }
 }
 
+// The boss room is one flat arena. Its picture is not ready yet, so Level::draw shows a plain placeholder.
+void Level::buildBossRoom()
+{
+    addSolid(0.f, 900.f, BOSS_ROOM_WIDTH, 40.f);
+}
+
 bool Level::isCathedral() const { return region == Region::Cathedral; }
 void Level::enterCathedral() { setRegion(Region::Cathedral); }
 Region Level::getRegion() const { return region; }
@@ -227,15 +235,18 @@ sf::Vector2f Level::getSpawn() const
 {
     if (region == Region::RedMoonRuins)
         return { 120.f, 500.f };   // the knight falls onto the first safe platform
+    if (region == Region::BossRoom)
+        return { 150.f, 700.f };   // the knight drops onto the arena floor
     return { 100.f, 200.f };
 }
 
-bool Level::hasDoor() const { return region != Region::Cathedral; }
+bool Level::hasDoor() const { return region != Region::BossRoom; }
 
 Region Level::getNextRegion() const
 {
     if (region == Region::AshenBarrow) return Region::RedMoonRuins;
-    return Region::Cathedral;
+    if (region == Region::RedMoonRuins) return Region::Cathedral;
+    return Region::BossRoom;
 }
 
 // The "Press E" area around the exit gate of each region
@@ -245,6 +256,8 @@ sf::FloatRect Level::getDoorTrigger() const
         return sf::FloatRect({ 6184.f, -90.f }, { 350.f, 1000.f });
     if (region == Region::RedMoonRuins)   // the glowing portal at the end of scene7
         return sf::FloatRect({ 2.f * RUINS_SCENE_WIDTH + 1600.f, 330.f }, { 300.f, 280.f });
+    if (region == Region::Cathedral)      // the portal at the far end of the cathedral (leads to the boss)
+        return sf::FloatRect({ 3800.f, 640.f }, { 280.f, 260.f });
     return sf::FloatRect({ 0.f, 0.f }, { 0.f, 0.f });
 }
 
@@ -281,7 +294,7 @@ void Level::draw(sf::RenderWindow& window)
             window.draw(s);
         }
     }
-    else
+    else if (region == Region::Cathedral)
     {
         for (int i = 0; i < 3; i++)
         {
@@ -290,6 +303,13 @@ void Level::draw(sf::RenderWindow& window)
             s.setScale({SCENE_WIDTH / s.getTexture().getSize().x, HEIGHT / s.getTexture().getSize().y});
             window.draw(s);
         }
+    }
+    else
+    {
+        // Boss room: placeholder background until its picture is added
+        sf::RectangleShape background({ BOSS_ROOM_WIDTH, HEIGHT });
+        background.setFillColor(sf::Color(28, 14, 20));
+        window.draw(background);
     }
     // Change this to true only when aligning collision rectangles.
     bool showPlatforms = true;
@@ -304,6 +324,7 @@ const std::vector<sf::RectangleShape>& Level::getPlatforms() const
 { return platforms; }
 float Level::getWidth() const 
 {
+    if (region == Region::BossRoom)     return BOSS_ROOM_WIDTH;
     if (region == Region::Cathedral)    return 3.f * SCENE_WIDTH;
     if (region == Region::RedMoonRuins) return RUINS_WIDTH;
     return EXTERIOR_WIDTH;

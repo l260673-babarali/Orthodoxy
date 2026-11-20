@@ -3,6 +3,7 @@
 #include <vector>
 #include <cmath>
 #include <algorithm>
+#include <cstdlib>
 #include "../Classes/Projectile.h"
 #include "../Classes/Spike.h"
 
@@ -13,13 +14,14 @@ struct EnemyWorld
     std::vector<Spike>& spikes;
 };
 
-// Base class for every enemy (Golem, BurstSpirit, Phoenix)
+// Base class for every enemy (Golem, BurstSpirit, Phoenix, Skeleton, DraconicLord)
 class Enemy
 {
 protected:
     sf::RectangleShape shape;   // the enemy's body / hitbox
     sf::Color base_color;
     int health;
+    int max_health = 1;         // health at the start of the fight (for the boss health bar)
     int difficulty_level = 1;
     bool alive = true;
     bool defeated_by_player = false;  // excludes spirits that explode on their own
@@ -49,6 +51,10 @@ public:
     virtual bool hurtsOnContact() const { return true; }
     // Is the enemy hitting something right now (claws, explosion)? Fills 'box' if yes.
     virtual bool getAttackHitbox(sf::FloatRect&) const { return false; }
+
+    // The boss has a health bar on the screen
+    virtual bool isBoss() const { return false; }
+    float getHealthFraction() const;   // 1 = full health, 0 = dead
 
     void setDifficulty(int level);
     int getAttackDamage() const;
@@ -201,6 +207,83 @@ public:
     void update(float delta_time, const std::vector<sf::RectangleShape>& solids,
         sf::Vector2f player_center, EnemyWorld& world) override;
     void draw(sf::RenderWindow& window) override;
+    bool hurtsOnContact() const override { return false; }
+    bool getAttackHitbox(sf::FloatRect& box) const override;
+};
+
+// The final boss: a draconic lord in human form (a plain box until the sprites are ready).
+// He walks toward the player and uses 5 attacks, never the same one twice in a row:
+//   0 = dragon scales (a ring of scales flies out in every direction, avoid it with a jump)
+//   1 = draconic strike (a fast dash-slash across the room)
+//   2 = fireball (one big ball of fire at the player)
+//   3 = planted blade (a blade sticks in the ground, then explodes in a wide area)
+//   4 = burning ground (the whole floor catches fire, stay in the air)
+class DraconicLord : public Enemy
+{
+private:
+    enum class State
+    {
+        Walk, ScalesWindup, StrikeWindup, StrikeDash, FireballWindup,
+        BladeWindup, BladePlanted, BladeExplode, FireWindup, FireBurning, Recover
+    };
+    State state = State::Walk;
+    float state_timer = 0.f;        // how long we have been in the current state
+    float attack_cooldown = 2.f;    // seconds until the next attack (a short pause at the start)
+    int last_attack = -1;           // so the same attack is not used twice in a row
+    float blade_x = 0.f;            // where the blade is stuck in the ground
+    float ground_y = 0.f;           // the top of the floor (where the boss stands)
+
+    static constexpr float walk_speed = 90.f;
+    static constexpr float stop_range = 250.f;       // stops walking when this close to the player
+    static constexpr float attack_pause = 1.f;       // rest between two attacks
+    static constexpr float recover_time = 0.7f;
+
+    // The room is a flat arena. These must match the boss room width in Level.cpp.
+    static constexpr float arena_left = 0.f;
+    static constexpr float arena_right = 1920.f;
+
+    // 0 - Dragon scales
+    static constexpr float scales_windup_time = 0.7f;
+    static constexpr int scale_count = 12;           // spread evenly all the way around
+    static constexpr float scale_speed = 280.f;
+    static constexpr float scale_size = 16.f;
+    static constexpr float scale_life = 2.5f;
+
+    // 1 - Draconic strike
+    static constexpr float strike_windup_time = 0.55f;  // warning before the dash
+    static constexpr float strike_dash_time = 0.4f;
+    static constexpr float strike_speed = 1100.f;
+    static constexpr float strike_reach = 70.f;         // the slash reaches this far in front of the body
+
+    // 2 - Fireball
+    static constexpr float fireball_windup_time = 0.6f;
+    static constexpr float fireball_speed = 380.f;
+    static constexpr float fireball_size = 30.f;
+
+    // 3 - Planted blade
+    static constexpr float blade_windup_time = 0.5f;
+    static constexpr float blade_planted_time = 1.4f;   // the blade waits this long, then explodes
+    static constexpr float blade_explode_time = 0.3f;
+    static constexpr float explosion_width = 360.f;
+    static constexpr float explosion_height = 260.f;
+
+    // 4 - Burning ground
+    static constexpr float fire_windup_time = 0.9f;     // the floor glows first (warning)
+    static constexpr float fire_burn_time = 2.f;        // how long the floor burns
+    static constexpr float fire_height = 40.f;          // flames this high hurt, so jump higher than this
+
+    void chooseAttack();
+    void clampToArena();
+    void throwScales(EnemyWorld& world);
+    void throwFireball(sf::Vector2f player_center, EnemyWorld& world);
+
+public:
+    DraconicLord(float x, float y);
+
+    void update(float delta_time, const std::vector<sf::RectangleShape>& solids,
+        sf::Vector2f player_center, EnemyWorld& world) override;
+    void draw(sf::RenderWindow& window) override;
+    bool isBoss() const override { return true; }
     bool hurtsOnContact() const override { return false; }
     bool getAttackHitbox(sf::FloatRect& box) const override;
 };
