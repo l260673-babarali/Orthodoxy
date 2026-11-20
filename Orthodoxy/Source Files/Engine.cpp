@@ -105,6 +105,18 @@ Engine::Engine()
     if (!scroll_texture.loadFromFile("Assets/Sprites/Items/holy_scroll.png"))
         std::cout << "Could not load holy_scroll.png\n";
     scroll_texture.setSmooth(false);
+
+    // Story paintings are independent of the actual level backgrounds.
+    const char* storyFiles[6] = {
+        "opening.png", "ashen.png", "redmoon.png",
+        "cathedral.png", "boss.png", "ending.png"
+    };
+    for (int i = 0; i < 6; i++)
+    {
+        std::string path = "Assets/Sprites/Story/" + std::string(storyFiles[i]);
+        if (!story_pictures[i].loadFromFile(path))
+            std::cout << "Missing story artwork: " << path << "\n";
+    }
 }
 
 Engine::~Engine()
@@ -137,7 +149,8 @@ void Engine::startGame()
     combo_timer = 0.f;
     level.reset();
     enterRegion(Region::AshenBarrow);
-    state = GameState::Playing;
+    story_page = 0;
+    state = GameState::Story;
 }
 
 // Enemies for whichever region is loaded right now
@@ -356,7 +369,10 @@ void Engine::updateBlink(float deltaTime)
     }
 
     if (blinkTimer >= blinkCloseTime + blinkHoldTime + blinkOpenTime)
+    {
         blinking = false;
+        showRegionStory(level.getRegion());
+    }
 }
 
 // Two black eyelids: one comes down from the top, one up from the bottom
@@ -410,12 +426,12 @@ std::vector<std::string> Engine::menuItems() const
     if (state == GameState::MainMenu)
     {
         if (hasSave())
-            return { "New Game", "Continue", "Controls", "Quit" };
+            return { "New Game", "Continue", "Lore Codex", "Controls", "Quit" };
 
-        return { "New Game", "Controls", "Quit" };
+        return { "New Game", "Lore Codex", "Controls", "Quit" };
     }
 
-    return { "Resume", "Controls", "Main Menu", "Quit" };
+    return { "Resume", "Lore Codex", "Controls", "Main Menu", "Quit" };
 }
 
 void Engine::activateMenuItem()
@@ -432,6 +448,12 @@ void Engine::activateMenuItem()
         else if (selected == "Continue")
         {
             loadGame();
+        }
+        else if (selected == "Lore Codex")
+        {
+            codex_from_pause = false;
+            codex_page = 0;
+            state = GameState::Codex;
         }
         else if (selected == "Controls")
         {
@@ -451,14 +473,19 @@ void Engine::activateMenuItem()
             state = GameState::Playing;
             break;
         case 1:
+            codex_from_pause = true;
+            codex_page = 0;
+            state = GameState::Codex;
+            break;
+        case 2:
             controls_from_pause = true;
             state = GameState::Controls;
             break;
-        case 2:
+        case 3:
             state = GameState::MainMenu;
             menu_index = 0;
             break;
-        case 3:
+        case 4:
             window.close();
             break;
         }
@@ -468,6 +495,46 @@ void Engine::activateMenuItem()
 void Engine::handleKey(sf::Keyboard::Key key)
 {
     using K = sf::Keyboard::Key;
+
+    if (state == GameState::Story)
+    {
+        if (key == K::Enter || key == K::Space)
+        {
+            if (story_page == 0)
+                story_page = 1;    // Opening is followed by the Ashen Barrow introduction
+            else
+                state = GameState::Playing;
+            clock.restart();
+        }
+        return;
+    }
+
+    if (state == GameState::Epilogue)
+    {
+        if (key == K::Enter || key == K::Space)
+            state = GameState::Victory; // Keep the original stats and victory summary
+        return;
+    }
+
+    if (state == GameState::Codex)
+    {
+        if (key == K::Escape || key == K::Backspace)
+        {
+            state = codex_from_pause ? GameState::Paused : GameState::MainMenu;
+            menu_index = 0;
+        }
+        else if (key == K::W || key == K::Up)
+        {
+            codex_page--;
+            if (codex_page < 0) codex_page = 5;
+        }
+        else if (key == K::S || key == K::Down)
+        {
+            codex_page++;
+            if (codex_page > 5) codex_page = 0;
+        }
+        return;
+    }
 
     if (state == GameState::Playing)
     {
@@ -602,6 +669,7 @@ void Engine::drawMenu(const std::string& title)
         sf::RectangleShape backdrop({ 960.f, 540.f });
         backdrop.setFillColor(ink);
         window.draw(backdrop);
+        drawStoryBackground(0);
         sf::RectangleShape redGlow({ 960.f, 190.f });
         redGlow.setPosition({ 0.f, 350.f });
         redGlow.setFillColor(sf::Color(59, 23, 34, 110));
@@ -611,7 +679,7 @@ void Engine::drawMenu(const std::string& title)
         return;
 
     const sf::Font& headingFont = title_font_loaded ? title_font : font;
-    uiPanel(window, 270.f, 82.f, 420.f, 381.f);
+    uiPanel(window, 270.f, 70.f, 420.f, 405.f);
     uiText(window, font, state == GameState::Paused ? "ALTAR OF REFLECTION" :
         "A DARK FANTASY ACTION PLATFORMER", 13, 480.f, 111.f, muted, true);
     uiText(window, headingFont, title, state == GameState::Paused ? 40 : 49,
@@ -623,7 +691,7 @@ void Engine::drawMenu(const std::string& title)
     {
         bool selected = i == menu_index;
         // Menu row Y = first row 227 + row index x 49, is se options equal gap par hain.
-        const float y = 227.f + i * 49.f;
+        const float y = 215.f + i * 45.f;
         if (selected)
         {
             sf::RectangleShape focus({ 272.f, 38.f });
@@ -638,7 +706,7 @@ void Engine::drawMenu(const std::string& title)
             selected ? gold : parchment, true);
     }
     uiText(window, font, "W / S  -  SELECT       ENTER  -  CONFIRM",
-        12, 480.f, 439.f, muted, true);
+        12, 480.f, 452.f, muted, true);
 }
 
 void Engine::drawControls()
@@ -691,8 +759,172 @@ void Engine::drawControls()
     uiRule(window, 192.f, 401.f, 576.f);
     uiText(window, font, "W / S or ARROWS: MENU     ENTER: SELECT", 14,
         480.f, 417.f, parchment, true);
-    uiText(window, font, "ESC / ENTER: BACK", 14,
-        480.f, 451.f, gold, true);
+    uiText(window, font, "LORE CODEX: FROM TITLE / PAUSE MENU", 13,
+        480.f, 450.f, gold, true);
+}
+
+void Engine::showRegionStory(Region region)
+{
+    // The original level order is Ashen Barrow, Red Moon Ruins, Cathedral, boss.
+    if (region == Region::AshenBarrow) story_page = 1;
+    else if (region == Region::RedMoonRuins) story_page = 2;
+    else if (region == Region::Cathedral) story_page = 3;
+    else story_page = 4;
+    state = GameState::Story;
+    clock.restart();
+}
+
+void Engine::drawStoryBackground(int imageNumber)
+{
+    if (imageNumber < 0 || imageNumber > 5) return;
+    if (story_pictures[imageNumber].getSize().x == 0) return;
+    sf::Sprite picture(story_pictures[imageNumber]);
+    picture.setScale({ 960.f / story_pictures[imageNumber].getSize().x,
+                       540.f / story_pictures[imageNumber].getSize().y });
+    window.draw(picture);
+}
+
+void Engine::drawStory()
+{
+    window.setView(ui_view);
+    window.clear(ink);
+
+    int image = story_page;
+    if (state == GameState::Epilogue) image = 5;
+    drawStoryBackground(image);
+
+    // A small dark parchment panel leaves the generated art visible on the right.
+    sf::RectangleShape panelShape({ 480.f, 388.f });
+    panelShape.setPosition({ 35.f, 75.f });
+    panelShape.setFillColor(sf::Color(14, 11, 16, 225));
+    panelShape.setOutlineThickness(1.f);
+    panelShape.setOutlineColor(border);
+    window.draw(panelShape);
+    uiRule(window, 61.f, 143.f, 425.f);
+
+    if (!font_loaded) return;
+    const sf::Font& heading = title_font_loaded ? title_font : font;
+    std::string title;
+    std::string lines[7];
+    int count = 0;
+
+    if (state == GameState::Epilogue)
+    {
+        title = "THE CURSE IS BROKEN";
+        lines[0] = "The Draconic Lord has fallen.";
+        lines[1] = "The Cathedral grows quiet at last.";
+        lines[2] = "The flames of corruption fade,";
+        lines[3] = "and the restless dead find peace.";
+        lines[4] = "Orthodoxy is not yet healed.";
+        lines[5] = "But hope has returned to its ruins.";
+        count = 6;
+    }
+    else if (story_page == 0)
+    {
+        title = "THE LAST PENITENT";
+        lines[0] = "Once, Orthodoxy was a land of faith.";
+        lines[1] = "Its holy Order guarded a great Cathedral.";
+        lines[2] = "Then a darkness rose beneath its altar.";
+        lines[3] = "The Order fell. The dead awakened.";
+        lines[4] = "Only one knight remains to face it.";
+        lines[5] = "Cross the ruins. End the corruption.";
+        count = 6;
+    }
+    else if (story_page == 1)
+    {
+        title = "ASHEN BARROW";
+        lines[0] = "Here lie the warriors of the old Order.";
+        lines[1] = "Their graves are open, their oaths broken.";
+        lines[2] = "Through ash and forgotten stones,";
+        lines[3] = "the last knight begins his penance.";
+        count = 4;
+    }
+    else if (story_page == 2)
+    {
+        title = "RED MOON RUINS";
+        lines[0] = "Under a crimson moon, the curse grows.";
+        lines[1] = "Ruined shrines burn with forbidden fire.";
+        lines[2] = "Even the sky bears its ancient wound.";
+        count = 3;
+    }
+    else if (story_page == 3)
+    {
+        title = "THE CATHEDRAL";
+        lines[0] = "The last sanctuary stands in pieces.";
+        lines[1] = "Its halls have forgotten every hymn.";
+        lines[2] = "Beyond the broken altar waits the source.";
+        count = 3;
+    }
+    else
+    {
+        title = "THE DRACONIC LORD";
+        lines[0] = "At the heart of Orthodoxy, he waits.";
+        lines[1] = "His fire consumed the sacred Order.";
+        lines[2] = "This is where your penance ends.";
+        count = 3;
+    }
+
+    uiText(window, font, "ORTHODOXY  /  CHRONICLE", 13, 63.f, 93.f, muted);
+    uiText(window, heading, title, 29, 63.f, 110.f, gold);
+    for (int i = 0; i < count; i++)
+        uiText(window, font, lines[i], 17, 64.f, 182.f + i * 34.f, parchment);
+    uiRule(window, 62.f, 412.f, 424.f);
+    if (state == GameState::Epilogue)
+        uiText(window, font, "ENTER / SPACE  -  VICTORY RECORD", 14, 64.f, 429.f, gold);
+    else
+        uiText(window, font, "ENTER / SPACE  -  CONTINUE", 14, 64.f, 429.f, gold);
+}
+
+void Engine::drawCodex()
+{
+    window.setView(ui_view);
+    window.clear(ink);
+    drawStoryBackground(0);
+    sf::RectangleShape shade({ 960.f, 540.f });
+    shade.setFillColor(sf::Color(7, 5, 11, 175));
+    window.draw(shade);
+    uiPanel(window, 70.f, 42.f, 820.f, 455.f);
+    if (!font_loaded) return;
+    const sf::Font& heading = title_font_loaded ? title_font : font;
+    uiText(window, heading, "LORE CODEX", 33, 480.f, 69.f, gold, true);
+    uiRule(window, 98.f, 125.f, 764.f);
+
+    const char* titles[6] = {
+        "The Fallen Order", "The Penitent Knight", "The Eight Scrolls",
+        "Ashen Barrow", "Red Moon Ruins", "The Draconic Lord"
+    };
+    const char* paragraphs[6][4] = {
+        { "The Order protected Orthodoxy and its Cathedral.", "When corruption rose, its knights were lost.", "Only the ruins remember their vows.", "" },
+        { "The last warrior of the Order walks alone.", "Each fallen guardian brings him closer", "to the darkness beneath the Cathedral.", "" },
+        { "Eight holy scrolls survived the collapse.", "They preserve fragments of sacred strength.", "Collect them to improve your abilities.", "" },
+        { "This burial ground holds the old defenders.", "Their bodies rose when the curse spread.", "No grave in the Barrow remains peaceful.", "" },
+        { "The moon burns above shattered temples.", "The deeper the curse reaches, the more", "dangerous the creatures become.", "" },
+        { "The Lord waits at the end of the Cathedral.", "His ancient fire is tied to the curse.", "Defeating him may grant the land peace.", "" }
+    };
+
+    for (int i = 0; i < 6; i++)
+    {
+        float y = 157.f + i * 39.f;
+        if (i == codex_page)
+        {
+            sf::RectangleShape highlight({ 257.f, 32.f });
+            highlight.setPosition({ 99.f, y - 4.f });
+            highlight.setFillColor(sf::Color(116, 38, 48, 160));
+            window.draw(highlight);
+        }
+        uiText(window, font, titles[i], 16, 109.f, y, i == codex_page ? gold : parchment);
+    }
+    sf::RectangleShape parchmentSheet({ 478.f, 290.f });
+    parchmentSheet.setPosition({ 375.f, 150.f });
+    parchmentSheet.setFillColor(sf::Color(31, 25, 27, 232));
+    parchmentSheet.setOutlineThickness(1.f);
+    parchmentSheet.setOutlineColor(border);
+    window.draw(parchmentSheet);
+    uiText(window, heading, titles[codex_page], 23, 397.f, 173.f, gold);
+    uiRule(window, 397.f, 218.f, 431.f);
+    for (int i = 0; i < 4; i++)
+        uiText(window, font, paragraphs[codex_page][i], 15, 398.f, 254.f + i * 30.f, parchment);
+    uiText(window, font, "W / S  -  SELECT     ESC  -  BACK", 13, 480.f, 464.f, gold, true);
 }
 
 void Engine::run()
@@ -870,7 +1102,7 @@ void Engine::update()
     // The boss is down: show the victory screen
     if (boss_defeated)
     {
-        state = GameState::Victory;
+        state = GameState::Epilogue;
         clock.restart();
         return;
     }
@@ -1155,6 +1387,18 @@ void Engine::drawUpgrades()
 
 void Engine::render()
 {
+    if (state == GameState::Story || state == GameState::Epilogue)
+    {
+        drawStory();
+        window.display();
+        return;
+    }
+    if (state == GameState::Codex)
+    {
+        drawCodex();
+        window.display();
+        return;
+    }
     if (state == GameState::StageCleared)
     {
         drawStageCleared();
@@ -1226,7 +1470,7 @@ bool Engine::hasSave() const
     std::string firstLine;
     if (!file.is_open()) return false;
     file >> firstLine;
-    return firstLine == "ORTHODOXY_SAVE_V1";
+    return firstLine == "ORTHODOXY_SAVE_V1" || firstLine == "ORTHODOXY_SAVE_V2";
 }
 
 bool Engine::saveGame()
@@ -1240,16 +1484,26 @@ bool Engine::saveGame()
     }
 
     sf::Vector2f position = player.getBounds().position;
-    file << "ORTHODOXY_SAVE_V1\n";
-    file << (int)level.getRegion() << ' ' << position.x << ' ' << position.y << '\n';
-    file << player.getHealth() << ' ';
-    for (int i = 0; i < 4; i++) file << player.getStat(i) << ' ';
-    file << '\n';
-    file << scrolls << ' ' << collected_total << ' ' << total_kills << ' ';
-    file << stage_kills << ' ' << stage_relics << ' ' << best_combo << ' ' << stage_seconds << '\n';
-    for (int i = 0; i < 8; i++) file << (collected_scrolls[i] ? 1 : 0) << ' ';
-    file << '\n';
-    file << total_seconds << '\n';
+    // Each value has its own name so the save file is easy to read.
+    file << "ORTHODOXY_SAVE_V2\n";
+    file << "Region " << (int)level.getRegion() << '\n';
+    file << "PositionX " << position.x << '\n';
+    file << "PositionY " << position.y << '\n';
+    file << "Health " << player.getHealth() << '\n';
+    file << "Vitality " << player.getStat(0) << '\n';
+    file << "Strength " << player.getStat(1) << '\n';
+    file << "Endurance " << player.getStat(2) << '\n';
+    file << "Agility " << player.getStat(3) << '\n';
+    file << "ScrollsAvailable " << scrolls << '\n';
+    file << "ScrollsCollected " << collected_total << '\n';
+    file << "TotalKills " << total_kills << '\n';
+    file << "StageKills " << stage_kills << '\n';
+    file << "StageRelics " << stage_relics << '\n';
+    file << "BestCombo " << best_combo << '\n';
+    file << "StageSeconds " << stage_seconds << '\n';
+    file << "TotalSeconds " << total_seconds << '\n';
+    for (int i = 0; i < 8; i++)
+        file << "Scroll" << i + 1 << ' ' << (collected_scrolls[i] ? 1 : 0) << '\n';
     file.close();
 
     if (!file)
@@ -1282,23 +1536,56 @@ bool Engine::loadGame()
     float x = 0.f, y = 0.f, savedTime = 0.f;
     int flags[8] = {};
 
-    file >> version >> regionNumber >> x >> y >> health;
-    for (int i = 0; i < 4; i++) file >> stats[i];
-    file >> savedScrolls >> savedCollected >> savedKills;
-    file >> savedStageKills >> savedRelics >> savedCombo >> savedTime;
-    for (int i = 0; i < 8; i++) file >> flags[i];
-
-    bool valid = (bool)file;
-    // The total time was added later: an older save does not have it, so use the stage time then
-    float savedTotal = savedTime;
-    if (valid)
+    file >> version;
+    bool valid = true;
+    float savedTotal = 0.f;
+    if (version == "ORTHODOXY_SAVE_V2")
     {
-        float readTotal = 0.f;
-        if (file >> readTotal && readTotal >= savedTime && readTotal < 100000000.f)
-            savedTotal = readTotal;
+        // Read names and numbers in a fixed order: simple and easy to explain.
+        std::string name;
+        file >> name >> regionNumber;  if (name != "Region") valid = false;
+        file >> name >> x;             if (name != "PositionX") valid = false;
+        file >> name >> y;             if (name != "PositionY") valid = false;
+        file >> name >> health;        if (name != "Health") valid = false;
+        file >> name >> stats[0];      if (name != "Vitality") valid = false;
+        file >> name >> stats[1];      if (name != "Strength") valid = false;
+        file >> name >> stats[2];      if (name != "Endurance") valid = false;
+        file >> name >> stats[3];      if (name != "Agility") valid = false;
+        file >> name >> savedScrolls;  if (name != "ScrollsAvailable") valid = false;
+        file >> name >> savedCollected;if (name != "ScrollsCollected") valid = false;
+        file >> name >> savedKills;    if (name != "TotalKills") valid = false;
+        file >> name >> savedStageKills;if (name != "StageKills") valid = false;
+        file >> name >> savedRelics;   if (name != "StageRelics") valid = false;
+        file >> name >> savedCombo;    if (name != "BestCombo") valid = false;
+        file >> name >> savedTime;     if (name != "StageSeconds") valid = false;
+        file >> name >> savedTotal;    if (name != "TotalSeconds") valid = false;
+        for (int i = 0; i < 8; i++)
+        {
+            file >> name >> flags[i];
+            if (name != "Scroll" + std::to_string(i + 1)) valid = false;
+        }
+        if (!file) valid = false;
+        if (!(savedTotal >= savedTime && savedTotal < 100000000.f)) valid = false;
     }
-    if (version != "ORTHODOXY_SAVE_V1") valid = false;
-    if (regionNumber < 0 || regionNumber > 3) valid = false;
+    else if (version == "ORTHODOXY_SAVE_V1")
+    {
+        // Old numeric saves still load; F5 converts them to the readable format.
+        file >> regionNumber >> x >> y >> health;
+        for (int i = 0; i < 4; i++) file >> stats[i];
+        file >> savedScrolls >> savedCollected >> savedKills;
+        file >> savedStageKills >> savedRelics >> savedCombo >> savedTime;
+        for (int i = 0; i < 8; i++) file >> flags[i];
+        valid = (bool)file;
+        savedTotal = savedTime;
+        if (valid)
+        {
+            float readTotal = 0.f;
+            if (file >> readTotal && readTotal >= savedTime && readTotal < 100000000.f)
+                savedTotal = readTotal;
+        }
+    }
+    else valid = false;
+    if (regionNumber < 0 || regionNumber > 4) valid = false;
     if (!(x >= 0.f && x <= 7000.f && y >= -1000.f && y <= 1500.f)) valid = false;
     if (health < 1 || health > 9) valid = false;
     for (int i = 0; i < 4; i++)
