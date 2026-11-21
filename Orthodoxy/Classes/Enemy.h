@@ -37,6 +37,7 @@ protected:
     float consumeKnockback(float delta_time);
     bool moveHorizontal(float move_x, const std::vector<sf::RectangleShape>& solids);
     void applyGravity(float delta_time, const std::vector<sf::RectangleShape>& solids);
+    void drawAttackBox(sf::RenderWindow& window) const;   // red box = "this can hurt you" (debug, off by default)
 
 public:
     Enemy(sf::Vector2f position, sf::Vector2f size, sf::Color color, int start_health);
@@ -122,15 +123,27 @@ private:
     static constexpr float sight_range = 600.f;
     static constexpr float trigger_range = 130.f;     // must be this close to start the countdown
     static constexpr float still_time_needed = 0.5f;   // player must stand still this long
-    static constexpr float fuse_time = 0.6f;          // flashing before the boom
-    static constexpr float explosion_time = 0.2f;
+    static constexpr float fuse_time = 0.6f;          // charging before the boom
+    static constexpr float explosion_time = 0.5f;     // the whole explosion picture lasts this long
+    static constexpr float explosion_hurt_time = 0.25f;   // only the first part (the bright burst) hurts
     static constexpr float explosion_radius = 110.f;
+
+    // ---- Graphics (burst_spirit_sheet.png) ----
+    // Rows: 0 = idle (6), 1 = float toward the player (6), 2 = charge (6), 3 = the burst (4), 4 = explosion (4)
+    sf::Sprite sprite;
+    float anim_timer = 0.f;
+    static constexpr int cell_size = 184;           // one frame in the sheet
+    static constexpr float spirit_scale = 0.65f;    // size of the little spirit
+    static constexpr float boom_scale = 1.7f;       // size of the explosion pictures
+
+    void updateAnimation();
 
 public:
     BurstSpirit(float x, float y);
 
     void update(float delta_time, const std::vector<sf::RectangleShape>& solids,
         sf::Vector2f player_center, EnemyWorld& world) override;
+    void draw(sf::RenderWindow& window) override;
     void takeDamage(int amount, int strike_id, float from_direction) override;
     bool hurtsOnContact() const override { return false; }
     bool getAttackHitbox(sf::FloatRect& box) const override;
@@ -177,7 +190,7 @@ public:
     bool getAttackHitbox(sf::FloatRect& box) const override;
 };
 
-// A simple skeleton (placeholder box for now, sprites come later).
+// A simple skeleton.
 // Close to the player: slashes with its weapon. Far from the player: does a quick jump attack.
 class Skeleton : public Enemy
 {
@@ -188,6 +201,7 @@ private:
     float slash_cooldown = 0.5f;    // seconds until the next slash is allowed
     float leap_cooldown = 1.f;      // seconds until the next jump attack is allowed
     float leap_speed_x = 0.f;       // sideways speed chosen when the jump starts
+    bool last_attack_was_leap = false;   // decides which recover pictures to show
 
     static constexpr float walk_speed = 70.f;
     static constexpr float sight_range = 700.f;       // notices the player from this far
@@ -201,6 +215,19 @@ private:
     static constexpr float leap_max_speed_x = 500.f;
     static constexpr float recover_time = 0.6f;
 
+    // ---- Graphics (skeleton_sheet.png) ----
+    // Row 0 = bone swing: idle, wind-up 1, wind-up 2, swing 1, swing 2, recovery 1, recovery 2
+    // Row 1 = dash jump: crouch 1, crouch 2, leap, mid-air, dash arc, impact, landing, recover 1, recover 2
+    sf::Sprite sprite;
+    float anim_timer = 0.f;
+    static constexpr int cell_width = 132;              // one frame in the sheet
+    static constexpr int cell_height = 180;
+    static constexpr float feet_y = 173.f;              // where the feet touch inside a frame
+    static constexpr float sprite_scale = 0.9f;
+    static constexpr bool sheet_faces_right = true;     // the pictures look to the right (set false if he walks backwards)
+
+    void updateAnimation();
+
 public:
     Skeleton(float x, float y);
 
@@ -211,7 +238,7 @@ public:
     bool getAttackHitbox(sf::FloatRect& box) const override;
 };
 
-// The final boss: a draconic lord in human form (a plain box until the sprites are ready).
+// The final boss: a draconic lord in human form.
 // He walks toward the player and uses 5 attacks, never the same one twice in a row:
 //   0 = dragon scales (a ring of scales flies out in every direction, avoid it with a jump)
 //   1 = draconic strike (a fast dash-slash across the room)
@@ -232,6 +259,7 @@ private:
     int last_attack = -1;           // so the same attack is not used twice in a row
     float blade_x = 0.f;            // where the blade is stuck in the ground
     float ground_y = 0.f;           // the top of the floor (where the boss stands)
+    bool moving = false;            // true while he is walking toward the player (for the walk animation)
 
     static constexpr float walk_speed = 90.f;
     static constexpr float stop_range = 250.f;       // stops walking when this close to the player
@@ -272,6 +300,24 @@ private:
     static constexpr float fire_burn_time = 2.f;        // how long the floor burns
     static constexpr float fire_height = 40.f;          // flames this high hurt, so jump higher than this
 
+    // ---- Graphics ----
+    // draconic_lord_sheet.png, one row per move:
+    //   0 = idle (2) + walk (5)   1 = dash slash (6)   2 = dragon scales (9)
+    //   3 = fireball (8)          4 = planted mine (8) 5 = burning ground (4 body + 4 flames + 1)
+    // lord_fire_strips.png = 4 pictures of flames that are tiled along the floor.
+    sf::Sprite sprite;
+    float anim_timer = 0.f;
+    int body_row = 0;
+    int body_col = 0;
+    static constexpr int cell_width = 260;
+    static constexpr int cell_height = 176;
+    static constexpr float feet_y = 169.f;           // where the feet touch inside a frame
+    static constexpr float sprite_scale = 0.8f;
+    static constexpr int strip_width = 145;          // one picture in lord_fire_strips.png
+    static constexpr int strip_height = 83;
+    static constexpr float strip_scale = 0.95f;
+
+    void updateAnimation();
     void chooseAttack();
     void clampToArena();
     void throwScales(EnemyWorld& world);

@@ -50,6 +50,21 @@ bool Enemy::moveHorizontal(float move_x, const std::vector<sf::RectangleShape>& 
         sf::FloatRect solid_box = solid.getGlobalBounds();
         if (enemy_box.findIntersection(solid_box))
         {
+            // A small step (a ramp column): walk up it instead of stopping
+            float step_height = (enemy_box.position.y + enemy_box.size.y) - solid_box.position.y;
+            if (velocity_y == 0.f && step_height > 0.f && step_height <= 12.f)
+            {
+                sf::FloatRect lifted({ enemy_box.position.x, solid_box.position.y - enemy_box.size.y }, enemy_box.size);
+                bool head_free = true;
+                for (const auto& other : solids)
+                    if (lifted.findIntersection(other.getGlobalBounds()))
+                        head_free = false;
+                if (head_free)
+                {
+                    shape.setPosition({ lifted.position.x, lifted.position.y });
+                    continue;
+                }
+            }
             if (move_x > 0.f)   // moving right: stop at the solid's left side
                 // Enemy right wall par aaye to uska X = wall start - enemy width.
                 shape.setPosition({ solid_box.position.x - enemy_box.size.x, enemy_box.position.y });
@@ -119,6 +134,26 @@ void Enemy::draw(sf::RenderWindow& window)
         attack_box.setPosition(box.position);
         attack_box.setFillColor(sf::Color(255, 0, 0, 100));
 
+        window.draw(attack_box);
+    }
+}
+
+// Set this to true to see the red attack boxes again (useful while tuning attacks)
+namespace
+{
+    constexpr bool show_attack_boxes = false;
+}
+
+void Enemy::drawAttackBox(sf::RenderWindow& window) const
+{
+    if (!show_attack_boxes)
+        return;
+    sf::FloatRect box;
+    if (getAttackHitbox(box))
+    {
+        sf::RectangleShape attack_box(box.size);
+        attack_box.setPosition(box.position);
+        attack_box.setFillColor(sf::Color(255, 0, 0, 100));
         window.draw(attack_box);
     }
 }
@@ -391,10 +426,24 @@ void Golem::smashGround(EnemyWorld& world)
 namespace
 {
     const sf::Color spirit_color(170, 120, 255);
+
+    // One shared copy of the picture for every spirit (so it is loaded only once)
+    const sf::Texture& burstSpiritTexture()
+    {
+        static sf::Texture texture;
+        static bool tried = false;
+        if (!tried)
+        {
+            tried = true;
+            if (!texture.loadFromFile("Assets/Sprites/Enemies/BurstSpirit/burst_spirit_sheet.png"))
+                std::cout << "Could not load burst_spirit_sheet.png\n";
+        }
+        return texture;
+    }
 }
 
 BurstSpirit::BurstSpirit(float x, float y)
-    : Enemy({ x, y }, { 30.f, 30.f }, spirit_color, 2)
+    : Enemy({ x, y }, { 30.f, 30.f }, spirit_color, 2), sprite(burstSpiritTexture())
 {
 }
 
@@ -406,6 +455,7 @@ void BurstSpirit::update(float delta_time, const std::vector<sf::RectangleShape>
 
     updateHurtFlash(delta_time);
     bob_timer += delta_time;
+    anim_timer += delta_time;
     state_timer += delta_time;
     shape.move({ consumeKnockback(delta_time), 0.f });
 
@@ -440,6 +490,8 @@ void BurstSpirit::update(float delta_time, const std::vector<sf::RectangleShape>
         base_color = spirit_color;
         if (noticed)
         {
+            // Look at the player (the float pictures face right)
+            facing = (to_player.x >= 0.f) ? 1.f : -1.f;
             // Fly toward the player (to_player / distance = direction with length 1)
             if (distance_to_player > 40.f)
                 // Vector ko distance se divide = unit direction; phir speed x dt karne se Spirit player ki taraf move hota hai.
@@ -476,6 +528,66 @@ void BurstSpirit::update(float delta_time, const std::vector<sf::RectangleShape>
             alive = false;
         break;
     }
+
+    updateAnimation();
+}
+
+// Pick which picture of burst_spirit_sheet.png to show
+void BurstSpirit::updateAnimation()
+{
+    int row = 0;
+    int col = 0;
+    float scale = spirit_scale;
+
+    switch (state)
+    {
+    case State::Chase:
+        if (!noticed)
+        {
+            row = 0;
+            col = static_cast<int>(anim_timer * 8.f) % 6;     // calm floating
+        }
+        else
+        {
+            row = 1;
+            col = static_cast<int>(anim_timer * 10.f) % 6;    // flying at the player
+        }
+        break;
+    case State::Fuse:
+        row = 2;
+        // The 6 charge pictures are spread over the fuse time; the last (glowing) one stays
+        col = int(state_timer / fuse_time * 6.f);
+        if (col > 5) col = 5;
+        break;
+    case State::Exploding:
+        scale = boom_scale;
+        if (state_timer < explosion_hurt_time)
+        {
+            row = 3;   // the bright burst (this part hurts)
+            col = int(state_timer / explosion_hurt_time * 4.f);
+        }
+        else
+        {
+            row = 4;   // the explosion fading away
+            col = int((state_timer - explosion_hurt_time) / (explosion_time - explosion_hurt_time) * 4.f);
+        }
+        if (col > 3) col = 3;
+        break;
+    }
+
+    sprite.setTextureRect(sf::IntRect({ col * cell_size, row * cell_size }, { cell_size, cell_size }));
+    sprite.setOrigin({ cell_size / 2.f, cell_size / 2.f });
+    sprite.setScale({ scale * facing, scale });   // the sheet faces right
+    sprite.setPosition(getCenter());
+    sprite.setColor(hurt_timer > 0.f ? sf::Color(255, 140, 140) : sf::Color::White);
+}
+
+void BurstSpirit::draw(sf::RenderWindow& window)
+{
+    if (!alive)
+        return;
+    window.draw(sprite);
+    drawAttackBox(window);
 }
 
 // Can't be killed during the boom itself
@@ -489,7 +601,8 @@ void BurstSpirit::takeDamage(int amount, int strike_id, float from_direction)
 // The explosion is a square around the spirit
 bool BurstSpirit::getAttackHitbox(sf::FloatRect& box) const
 {
-    if (state != State::Exploding)
+    // Only the bright burst hurts; the fading smoke after it is harmless
+    if (state != State::Exploding || state_timer >= explosion_hurt_time)
         return false;
 
     sf::Vector2f center = getCenter();
@@ -773,10 +886,23 @@ bool Phoenix::getAttackHitbox(sf::FloatRect& box) const
 namespace
 {
     const sf::Color skeleton_bone(225, 220, 195);
+
+    const sf::Texture& skeletonTexture()
+    {
+        static sf::Texture texture;
+        static bool tried = false;
+        if (!tried)
+        {
+            tried = true;
+            if (!texture.loadFromFile("Assets/Sprites/Enemies/Skeleton/skeleton_sheet.png"))
+                std::cout << "Could not load skeleton_sheet.png\n";
+        }
+        return texture;
+    }
 }
 
 Skeleton::Skeleton(float x, float y)
-    : Enemy({ x, y }, { 44.f, 84.f }, skeleton_bone, 3)
+    : Enemy({ x, y }, { 44.f, 84.f }, skeleton_bone, 3), sprite(skeletonTexture())
 {
     knockback_speed = 150.f;
 }
@@ -788,6 +914,7 @@ void Skeleton::update(float delta_time, const std::vector<sf::RectangleShape>& s
         return;
 
     updateHurtFlash(delta_time);
+    anim_timer += delta_time;
     state_timer += delta_time;
     if (slash_cooldown > 0.f) slash_cooldown -= delta_time;
     if (leap_cooldown > 0.f) leap_cooldown -= delta_time;
@@ -816,6 +943,7 @@ void Skeleton::update(float delta_time, const std::vector<sf::RectangleShape>& s
         {
             // NEAR: slash
             state = State::SlashWindup;
+            last_attack_was_leap = false;
             state_timer = 0.f;
         }
         else if (dist >= leap_min_range && dist <= leap_max_range
@@ -823,6 +951,7 @@ void Skeleton::update(float delta_time, const std::vector<sf::RectangleShape>& s
         {
             // FAR: jump attack
             state = State::LeapWindup;
+            last_attack_was_leap = true;
             state_timer = 0.f;
         }
         // Skeleton desired approach distance slash range ka 80% hai; is se attack reach se thora paas aata hai.
@@ -896,22 +1025,83 @@ void Skeleton::update(float delta_time, const std::vector<sf::RectangleShape>& s
         state = State::Recover;
         state_timer = 0.f;
     }
+
+    updateAnimation();
 }
 
-// The box body plus a little dark square on the side it is facing (so we can see where it looks)
+// Pick which picture of skeleton_sheet.png to show.
+// Row 0 = bone swing (7 pictures), row 1 = dash jump (9 pictures)
+void Skeleton::updateAnimation()
+{
+    int row = 0;
+    int col = 0;
+    float bob = 0.f;   // little up/down while walking
+
+    switch (state)
+    {
+    case State::Idle:
+        // Breathing: switch slowly between the idle picture and the "recovery 2" picture (same pose)
+        col = (static_cast<int>(anim_timer * 3.f) % 2 == 0) ? 0 : 6;
+        break;
+    case State::Walk:
+        col = (static_cast<int>(anim_timer * 6.f) % 2 == 0) ? 0 : 6;
+        bob = std::abs(std::sin(anim_timer * 9.f)) * 3.f;
+        break;
+    case State::SlashWindup:
+        // wind-up 1 (arm goes up), then wind-up 2 (pulls back)
+        col = (state_timer < slash_windup_time * 0.55f) ? 1 : 2;
+        break;
+    case State::SlashStrike:
+        // swing 1, then swing 2 with the motion blur
+        col = (state_timer < slash_active_time * 0.5f) ? 3 : 4;
+        break;
+    case State::LeapWindup:
+        row = 1;
+        col = (state_timer < leap_windup_time * 0.5f) ? 0 : 1;   // crouch 1, crouch 2 (glowing)
+        break;
+    case State::Leap:
+    {
+        row = 1;
+        // The jump lasts about 2 x jump speed / gravity seconds; p = how far through the jump we are
+        float p = state_timer / (2.f * leap_jump_speed / 981.f);
+        if (p < 0.2f)       col = 2;   // leap
+        else if (p < 0.45f) col = 3;   // mid-air
+        else if (p < 0.7f)  col = 4;   // dash arc
+        else                col = 5;   // impact slash (red glow)
+        break;
+    }
+    case State::Recover:
+        if (last_attack_was_leap)
+        {
+            row = 1;
+            if (state_timer < 0.2f)       col = 6;   // landing
+            else if (state_timer < 0.4f)  col = 7;   // stumbles
+            else                          col = 8;   // back to idle
+        }
+        else
+        {
+            col = (state_timer < 0.3f) ? 5 : 6;      // recovery 1, recovery 2
+        }
+        break;
+    }
+
+    sprite.setTextureRect(sf::IntRect({ col * cell_width, row * cell_height }, { cell_width, cell_height }));
+    sprite.setOrigin({ cell_width / 2.f, feet_y });
+    float flip = sheet_faces_right ? facing : -facing;
+    sprite.setScale({ sprite_scale * flip, sprite_scale });
+    // Feet at the bottom middle of the hitbox
+    sprite.setPosition({ shape.getPosition().x + shape.getSize().x / 2.f,
+                         shape.getPosition().y + shape.getSize().y - bob });
+    sprite.setColor(hurt_timer > 0.f ? sf::Color(255, 150, 150) : sf::Color::White);
+}
+
 void Skeleton::draw(sf::RenderWindow& window)
 {
     if (!alive)
         return;
 
-    Enemy::draw(window);
-
-    sf::RectangleShape eye({ 10.f, 10.f });
-    float eye_x = (facing > 0.f) ? shape.getPosition().x + shape.getSize().x - 14.f
-                                 : shape.getPosition().x + 4.f;
-    eye.setPosition({ eye_x, shape.getPosition().y + 14.f });
-    eye.setFillColor(sf::Color(40, 0, 0));
-    window.draw(eye);
+    window.draw(sprite);
+    drawAttackBox(window);
 }
 
 // Slash: a box in front of the skeleton. Jump: the whole body (a bit bigger) hurts while flying.
@@ -947,10 +1137,36 @@ namespace
     const sf::Color lord_scale_color(90, 200, 140);   // the flying dragon scales
     const sf::Color lord_fire_color(255, 140, 30);
     const float lord_pi = 3.14159265f;
+
+    const sf::Texture& lordTexture()
+    {
+        static sf::Texture texture;
+        static bool tried = false;
+        if (!tried)
+        {
+            tried = true;
+            if (!texture.loadFromFile("Assets/Sprites/Enemies/DraconicLord/draconic_lord_sheet.png"))
+                std::cout << "Could not load draconic_lord_sheet.png\n";
+        }
+        return texture;
+    }
+
+    const sf::Texture& lordFireTexture()
+    {
+        static sf::Texture texture;
+        static bool tried = false;
+        if (!tried)
+        {
+            tried = true;
+            if (!texture.loadFromFile("Assets/Sprites/Enemies/DraconicLord/lord_fire_strips.png"))
+                std::cout << "Could not load lord_fire_strips.png\n";
+        }
+        return texture;
+    }
 }
 
 DraconicLord::DraconicLord(float x, float y)
-    : Enemy({ x, y }, { 56.f, 104.f }, lord_color, 30)
+    : Enemy({ x, y }, { 56.f, 104.f }, lord_color, 30), sprite(lordTexture())
 {
     knockback_speed = 40.f;   // a boss barely gets pushed
 }
@@ -990,6 +1206,7 @@ void DraconicLord::update(float delta_time, const std::vector<sf::RectangleShape
         return;
 
     updateHurtFlash(delta_time);
+    anim_timer += delta_time;
     state_timer += delta_time;
     if (attack_cooldown > 0.f) attack_cooldown -= delta_time;
 
@@ -1003,7 +1220,8 @@ void DraconicLord::update(float delta_time, const std::vector<sf::RectangleShape
     case State::Walk:
         base_color = lord_color;
         facing = (dx >= 0.f) ? 1.f : -1.f;
-        if (std::abs(dx) > stop_range)
+        moving = std::abs(dx) > stop_range;
+        if (moving)
             moveHorizontal(facing * walk_speed * delta_time, solids);
         if (attack_cooldown <= 0.f)
             chooseAttack();
@@ -1119,6 +1337,105 @@ void DraconicLord::update(float delta_time, const std::vector<sf::RectangleShape
 
     clampToArena();
     applyGravity(delta_time, solids);
+    updateAnimation();
+}
+
+// Pick which picture of draconic_lord_sheet.png the body shows.
+// Rows: 0 = idle + walk, 1 = dash slash, 2 = dragon scales, 3 = fireball, 4 = mine, 5 = burning ground
+void DraconicLord::updateAnimation()
+{
+    int row = 0;
+    int col = 0;
+    const int side_stand_col = 2;   // row 0, first walking picture = a calm side-on stance
+
+    switch (state)
+    {
+    case State::Walk:
+        row = 0;
+        if (moving)
+            col = 2 + static_cast<int>(anim_timer * 8.f) % 5;   // the 5 walking pictures
+        else
+            col = static_cast<int>(anim_timer * 2.5f) % 2;      // standing, facing us
+        break;
+
+    // 0: dragon scales (row 2)
+    case State::ScalesWindup:
+        row = 2;
+        col = (state_timer < 0.25f) ? 0 : (state_timer < 0.5f ? 1 : 2);
+        break;
+
+    // 1: dash slash (row 1)
+    case State::StrikeWindup:
+        row = 1;
+        col = (state_timer < 0.2f) ? 0 : (state_timer < 0.38f ? 1 : 2);
+        break;
+    case State::StrikeDash:
+        row = 1;
+        col = (state_timer < strike_dash_time * 0.5f) ? 3 : 4;
+        break;
+
+    // 2: fireball (row 3)
+    case State::FireballWindup:
+        row = 3;
+        col = (state_timer < 0.2f) ? 0 : (state_timer < 0.4f ? 1 : 2);
+        break;
+
+    // 3: mine (row 4). The mine itself is drawn in draw(); the boss crouches while he throws it.
+    case State::BladeWindup:
+        row = 4;
+        col = 2;
+        break;
+    case State::BladePlanted:
+    case State::BladeExplode:
+        row = 0;
+        col = side_stand_col;
+        break;
+
+    // 4: burning ground (row 5)
+    case State::FireWindup:
+        row = 5;
+        col = (state_timer < 0.3f) ? 0 : (state_timer < 0.6f ? 1 : 2);   // arms up, roaring
+        break;
+    case State::FireBurning:
+        row = 5;
+        col = 3;   // hand on the floor
+        break;
+
+    case State::Recover:
+        switch (last_attack)
+        {
+        case 0:
+            row = 2;
+            if (state_timer < 0.12f)      col = 3;   // the claws fly out
+            else if (state_timer < 0.24f) col = 6;   // burst
+            else if (state_timer < 0.45f) col = 7;
+            else                          col = 8;
+            break;
+        case 1:
+            if (state_timer < 0.35f) { row = 1; col = 5; }
+            else { row = 0; col = side_stand_col; }
+            break;
+        case 2:
+            row = 3;
+            if (state_timer < 0.15f)      col = 3;
+            else if (state_timer < 0.3f)  col = 5;
+            else if (state_timer < 0.5f)  col = 6;
+            else                          col = 7;
+            break;
+        case 4:
+            if (state_timer < 0.3f) { row = 5; col = 3; }
+            else { row = 0; col = side_stand_col; }
+            break;
+        default:
+            row = 0;
+            col = side_stand_col;
+            break;
+        }
+        break;
+    }
+
+    body_row = row;
+    body_col = col;
 }
 
 // A ring of scales flying out in every direction
@@ -1132,7 +1449,7 @@ void DraconicLord::throwScales(EnemyWorld& world)
         sf::Vector2f direction(std::cos(angle), std::sin(angle));
         world.projectiles.push_back(
             Projectile(center + direction * 40.f, { scale_size, scale_size }, direction * scale_speed,
-                0.f, 1, lord_scale_color, scale_life));
+                0.f, 1, lord_scale_color, scale_life, false, 3));   // 3 = claw shard picture
     }
 }
 
@@ -1147,7 +1464,7 @@ void DraconicLord::throwFireball(sf::Vector2f player_center, EnemyWorld& world)
         direction = to_player / length;
     world.projectiles.push_back(
         Projectile(start, { fireball_size, fireball_size }, direction * fireball_speed,
-            0.f, 1, lord_fire_color, 3.f));
+            0.f, 1, lord_fire_color, 3.f, false, 2));   // 2 = boss fireball picture
 }
 
 void DraconicLord::draw(sf::RenderWindow& window)
@@ -1155,10 +1472,10 @@ void DraconicLord::draw(sf::RenderWindow& window)
     if (!alive)
         return;
 
-    // ---- Warnings that lie on the floor (drawn first, so the boss stands in front of them) ----
+    // ---- Warnings and effects that lie on the floor (drawn first, so the boss stands in front) ----
     if (state == State::BladePlanted || state == State::BladeExplode)
     {
-        // The danger area slowly gets redder while the blade waits
+        // The danger area slowly gets redder while the mine waits
         float fuse = state_timer / blade_planted_time;
         if (state == State::BladeExplode || fuse > 1.f)
             fuse = 1.f;
@@ -1169,15 +1486,26 @@ void DraconicLord::draw(sf::RenderWindow& window)
         area.setOutlineThickness(2.f);
         window.draw(area);
 
-        // The blade stuck in the ground (a thin blade with a cross guard on top)
-        sf::RectangleShape blade({ 12.f, 90.f });
-        blade.setPosition({ blade_x - 6.f, ground_y - 90.f });
-        blade.setFillColor(sf::Color(200, 210, 235));
-        window.draw(blade);
-        sf::RectangleShape guard({ 40.f, 8.f });
-        guard.setPosition({ blade_x - 20.f, ground_y - 96.f });
-        guard.setFillColor(sf::Color(170, 140, 60));
-        window.draw(guard);
+        // The mine (row 4 of the sheet). It pulses faster and glows redder before it goes off.
+        sprite.setOrigin({ 123.f, 171.f });   // bottom middle of the mine picture
+        sprite.setPosition({ blade_x, ground_y });
+        if (state == State::BladePlanted)
+        {
+            float pulse = 1.f + 0.05f * std::sin(state_timer * (6.f + 14.f * fuse));
+            sprite.setTextureRect(sf::IntRect({ 3 * cell_width, 4 * cell_height }, { cell_width, cell_height }));
+            sprite.setScale({ 0.9f * pulse, 0.9f * pulse });
+            sprite.setColor(sf::Color(255, static_cast<unsigned char>(255 - 110 * fuse),
+                static_cast<unsigned char>(255 - 110 * fuse)));
+        }
+        else
+        {
+            // Smoke + flash first, then flying sparks
+            int col = (state_timer < blade_explode_time * 0.5f) ? 6 : 7;
+            sprite.setTextureRect(sf::IntRect({ col * cell_width, 4 * cell_height }, { cell_width, cell_height }));
+            sprite.setScale({ 1.8f, 1.8f });
+            sprite.setColor(sf::Color::White);
+        }
+        window.draw(sprite);
     }
     if (state == State::FireWindup)
     {
@@ -1190,28 +1518,33 @@ void DraconicLord::draw(sf::RenderWindow& window)
     }
     if (state == State::FireBurning)
     {
-        // A row of flickering flame boxes along the whole floor
-        for (float x = arena_left; x < arena_right; x += 40.f)
+        // Pictures of flames tiled along the whole floor. They overlap and are added on top of
+        // the background, so the joins are not visible. Every tile runs its own frame.
+        sf::Sprite flame(lordFireTexture());
+        flame.setOrigin({ strip_width / 2.f, static_cast<float>(strip_height) });
+        flame.setScale({ strip_scale, strip_scale });
+        const float step = strip_width * strip_scale * 0.5f;
+        int tile = 0;
+        for (float x = arena_left; x < arena_right + step; x += step, tile++)
         {
-            float flicker = 0.6f + 0.4f * std::sin(state_timer * 12.f + x * 0.05f);
-            float flame_height = fire_height * flicker;
-            sf::RectangleShape flame({ 40.f, flame_height });
-            flame.setPosition({ x, ground_y - flame_height });
-            flame.setFillColor(sf::Color(255, static_cast<unsigned char>(90 + 80 * flicker), 20, 200));
-            window.draw(flame);
+            int frame = (static_cast<int>(state_timer * 10.f) + tile) % 4;
+            flame.setTextureRect(sf::IntRect({ frame * strip_width, 0 }, { strip_width, strip_height }));
+            flame.setPosition({ x, ground_y + 2.f });
+            window.draw(flame, sf::BlendAdd);
         }
     }
 
     // ---- The boss himself ----
-    Enemy::draw(window);
+    sprite.setTextureRect(sf::IntRect({ body_col * cell_width, body_row * cell_height }, { cell_width, cell_height }));
+    sprite.setOrigin({ cell_width / 2.f, feet_y });
+    sprite.setScale({ sprite_scale * facing, sprite_scale });   // the sheet faces right
+    // Feet at the bottom middle of the hitbox
+    sprite.setPosition({ shape.getPosition().x + shape.getSize().x / 2.f,
+                         shape.getPosition().y + shape.getSize().y });
+    sprite.setColor(hurt_timer > 0.f ? sf::Color(255, 150, 150) : sf::Color::White);
+    window.draw(sprite);
 
-    // A little dark square on the side he is facing (so we can see where he looks)
-    sf::RectangleShape eye({ 12.f, 10.f });
-    float eye_x = (facing > 0.f) ? shape.getPosition().x + shape.getSize().x - 16.f
-                                 : shape.getPosition().x + 4.f;
-    eye.setPosition({ eye_x, shape.getPosition().y + 16.f });
-    eye.setFillColor(sf::Color(255, 220, 80));
-    window.draw(eye);
+    drawAttackBox(window);
 }
 
 // Hurts only during: the dash slash, the blade explosion, and while the floor burns
