@@ -50,14 +50,16 @@ bool Enemy::moveHorizontal(float move_x, const std::vector<sf::RectangleShape>& 
         sf::FloatRect solid_box = solid.getGlobalBounds();
         if (enemy_box.findIntersection(solid_box))
         {
-            // A small step (a ramp column): walk up it instead of stopping
+            // Thin platforms and ramps only hold you up from above: a small step is climbed,
+            // anything else is passed through
+            bool thin = solid_box.size.y < 20.f;
             float step_height = (enemy_box.position.y + enemy_box.size.y) - solid_box.position.y;
-            if (velocity_y == 0.f && step_height > 0.f && step_height <= 12.f)
+            if (velocity_y == 0.f && step_height > 0.f && step_height <= 16.f)
             {
                 sf::FloatRect lifted({ enemy_box.position.x, solid_box.position.y - enemy_box.size.y }, enemy_box.size);
                 bool head_free = true;
                 for (const auto& other : solids)
-                    if (lifted.findIntersection(other.getGlobalBounds()))
+                    if (other.getGlobalBounds().size.y >= 20.f && lifted.findIntersection(other.getGlobalBounds()))
                         head_free = false;
                 if (head_free)
                 {
@@ -65,6 +67,8 @@ bool Enemy::moveHorizontal(float move_x, const std::vector<sf::RectangleShape>& 
                     continue;
                 }
             }
+            if (thin)
+                continue;
             if (move_x > 0.f)   // moving right: stop at the solid's left side
                 // Enemy right wall par aaye to uska X = wall start - enemy width.
                 shape.setPosition({ solid_box.position.x - enemy_box.size.x, enemy_box.position.y });
@@ -84,6 +88,7 @@ void Enemy::applyGravity(float delta_time, const std::vector<sf::RectangleShape>
 
     // Enemy ki Y velocity har frame gravity x seconds se barhti hai.
     velocity_y += gravity * delta_time;
+    float feet_before = shape.getPosition().y + shape.getSize().y;
     // Enemy vertical movement = updated vertical velocity x seconds.
     shape.move({ 0.f, velocity_y * delta_time });
 
@@ -93,14 +98,19 @@ void Enemy::applyGravity(float delta_time, const std::vector<sf::RectangleShape>
         sf::FloatRect solid_box = solid.getGlobalBounds();
         if (enemy_box.findIntersection(solid_box))
         {
+            bool thin = solid_box.size.y < 20.f;
             if (velocity_y > 0.f)   // falling: land on top of the solid
             {
+                if (thin && feet_before > solid_box.position.y + 0.5f)
+                    continue;   // we are below this thin platform: it does not catch us
                 // Landing position = platform top - enemy height, taake enemy floor par khara ho.
                 shape.setPosition({ enemy_box.position.x, solid_box.position.y - enemy_box.size.y });
                 velocity_y = 0.f;
             }
             else if (velocity_y < 0.f)   // going up: bump the head on the underside
             {
+                if (thin)
+                    continue;
                 // Ceiling se takra kar enemy ka top ceiling ke bottom par set karte hain.
                 shape.setPosition({ enemy_box.position.x, solid_box.position.y + solid_box.size.y });
                 velocity_y = 0.f;
@@ -223,6 +233,7 @@ Golem::Golem(float x, float y)
     if (!texture.loadFromFile("Assets/Sprites/Enemies/Golem/golem_sheet.png"))
         std::cout << "Could not load golem_sheet.png\n";
     sprite.setTexture(texture, true);
+    updateAnimation();   // show the first frame at once (otherwise the whole sprite sheet is drawn before the first update)
 }
 
 void Golem::update(float delta_time, const std::vector<sf::RectangleShape>& solids,
@@ -445,6 +456,7 @@ namespace
 BurstSpirit::BurstSpirit(float x, float y)
     : Enemy({ x, y }, { 30.f, 30.f }, spirit_color, 2), sprite(burstSpiritTexture())
 {
+    updateAnimation();   // show the first frame at once (otherwise the whole sprite sheet is drawn before the first update)
 }
 
 void BurstSpirit::update(float delta_time, const std::vector<sf::RectangleShape>&,
@@ -626,6 +638,7 @@ Phoenix::Phoenix(float x, float y)
     if (!texture.loadFromFile("Assets/Sprites/Enemies/Phoenix/phoenix_sheet.png"))
         std::cout << "Could not load phoenix_sheet.png\n";
     sprite.setTexture(texture, true);
+    updateAnimation();   // show the first frame at once (otherwise the whole sprite sheet is drawn before the first update)
 }
 
 // Fly to a spot in front of the player, a bit above them
@@ -905,6 +918,7 @@ Skeleton::Skeleton(float x, float y)
     : Enemy({ x, y }, { 44.f, 84.f }, skeleton_bone, 3), sprite(skeletonTexture())
 {
     knockback_speed = 150.f;
+    updateAnimation();   // show the first frame at once (otherwise the whole sprite sheet is drawn before the first update)
 }
 
 void Skeleton::update(float delta_time, const std::vector<sf::RectangleShape>& solids,

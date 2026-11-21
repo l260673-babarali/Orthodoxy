@@ -99,8 +99,8 @@ private:
     static constexpr float climb_velocity = -400.f;
     static constexpr float min_wall_height = 300.f;   // only tall solids count as climbable walls
     // Ramps (stairs) are made of thin 4 px columns. Walking into a column that is at most this high is a step, not a wall
-    static constexpr float max_step_up = 12.f;
-    static constexpr float max_step_down = 14.f;     // walking down a ramp: stick to the ground instead of falling in small hops
+    static constexpr float max_step_up = 16.f;
+    static constexpr float max_step_down = 18.f;     // walking down a ramp: stick to the ground instead of falling in small hops
     static constexpr float input_buffer_time = 0.08f;
     float jump_buffer_timer = 0.f;
     float strike_buffer_timer = 0.f;

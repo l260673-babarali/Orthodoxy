@@ -44,12 +44,12 @@ namespace Extras
     // region lives in Level::getDoorTrigger().
     float doorX()
     {
-        return 3026.f;
+        return 3057.f;
     }
 
     float doorY()
     {
-        return 10.f;
+        return 95.f;
     }
 
     bool nearDoor(sf::Vector2f player, const Level& level)
@@ -108,25 +108,22 @@ namespace Extras
 
         if (level.getRegion() == Region::Cemetery)
         {
-            // Background mein flames
-            drawFire(window, 1442.f, 565.f, 3, 0.60f);
-
             if (doorTexture.getSize().x != 0)
             {
                 sf::Sprite gate(doorTexture);
-                gate.setScale({ 1.3f, 1.3f });
+                gate.setScale({ 0.9f, 0.9f });   // 173 x 230: fits the arch above the stairs
                 gate.setPosition({ x, y });
                 window.draw(gate);
             }
 
             // Gate ki dono taraf flames.
             // Pehli decorative flame portal se X+25 aur Y+190 offset par draw hoti hai.
-            drawFire(window, x + 25.f, y + 190.f, 3, 0.40f);
+            drawFire(window, x - 8.f, y + 230.f, 3, 0.40f);
             // Doosri flame same Y par X+168 offset par draw hoti hai.
-            drawFire(window, x + 168.f, y + 190.f, 3, 0.40f);
+            drawFire(window, x + 181.f, y + 230.f, 3, 0.40f);
 
             // Door bahut oopar hai; message visible rakhte hain.
-            promptPosition = { x - 10.f, y + 440.f };
+            promptPosition = { x - 20.f, y - 40.f };
         }
         else
         {

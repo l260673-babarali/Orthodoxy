@@ -7,6 +7,11 @@ Camera::Camera()
     view.setCenter({ 480.f, 270.f });
 }
 
+void Camera::setViewHeight(float height)
+{
+    view.setSize({ height * 16.f / 9.f, height });
+}
+
 // Center the view on the target, but clamp it so we never see outside the level
 void Camera::follow(sf::Vector2f target, float world_width, float world_top, float world_bottom)
 {
@@ -22,6 +27,9 @@ void Camera::follow(sf::Vector2f target, float world_width, float world_top, flo
     // Right limit = world ki total width - camera ki half width; is se world ke bahar ka area nazar nahi aata.
     if (camera_x > world_width - half_view_width)
         camera_x = world_width - half_view_width;
+    // A level narrower than the view (the boss room): keep it centred
+    if (world_width <= view.getSize().x)
+        camera_x = world_width / 2.f;
 
     // Top and bottom edges
     float camera_y = target.y;

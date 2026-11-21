@@ -1,4 +1,5 @@
 ﻿#include "../Classes/Player.h"
+#include "../Classes/GameAudio.h"
 #include<iostream>
 
 
@@ -85,6 +86,7 @@ void Player::update(
                 heavy_charging = false;
                 heavy_charge_timer = 0.f;
                 is_heavy_striking = true;
+                GameAudio::playSlash(2);
                 heavy_timer = 0.f;
                 heavy_cooldown_timer = heavy_cooldown;
                 strike_id++;
@@ -144,6 +146,7 @@ void Player::update(
     if (strike_pressed && !is_striking && !is_heavy_striking && !heavy_charging && !is_dashing && !near_wall && strike_cooldown_timer <= 0.f)
     {
         is_striking = true;
+        GameAudio::playSlash(strike_id % 2);
         strike_timer = 0.f;
         strike_cooldown_timer = strike_cooldown;
         strike_id++;
@@ -314,7 +317,9 @@ void Player::update(
                 continue;   // we are falling through this platform
             if (player_box.findIntersection(solid_box))
             {
-                // A small step (a ramp column): climb onto it instead of stopping
+                // Thin platforms and ramps are "one-way": they only hold you up from above. Walking
+                // into one is either a small step we climb, or we simply pass through it.
+                bool thin = solid_box.size.y < thin_platform_height;
                 float step_height = (player_box.position.y + player_box.size.y) - solid_box.position.y;
                 if (grounded_before_move && velocity_y >= 0.f && step_height > 0.f && step_height <= max_step_up)
                 {
@@ -322,9 +327,10 @@ void Player::update(
                     bool head_free = true;
                     for (const auto& other : solids)
                     {
-                        if (isDropIgnored(other.getGlobalBounds()))
-                            continue;
-                        if (lifted.findIntersection(other.getGlobalBounds()))
+                        sf::FloatRect other_box = other.getGlobalBounds();
+                        if (other_box.size.y < thin_platform_height || isDropIgnored(other_box))
+                            continue;   // only real walls can stop us from standing up on the step
+                        if (lifted.findIntersection(other_box))
                         {
                             head_free = false;
                             break;
@@ -336,6 +342,8 @@ void Player::update(
                         continue;
                     }
                 }
+                if (thin)
+                    continue;   // pass through the side of a thin platform
                 if (move_x > 0.f)   // moving right: stop at the solid's left side
                     // Right ja kar wall se takraye to player ka left X = wall ka left X - player width.
                     shape.setPosition({ solid_box.position.x - player_box.size.x, player_box.position.y });
@@ -349,6 +357,7 @@ void Player::update(
 
     // ---- Vertical movement + collision ----
     // Vertical distance = vertical speed x frame time; gravity ne velocity pehle update ki hoti hai.
+    float feet_before = shape.getPosition().y + shape.getSize().y;   // feet before moving up / down
     shape.move({ 0.f, velocity_y * delta_time });
     for (const auto& solid : solids)
     {
@@ -356,16 +365,22 @@ void Player::update(
         sf::FloatRect solid_box = solid.getGlobalBounds();
         if (isDropIgnored(solid_box))
             continue;   // we are falling through this platform
+        bool thin = solid_box.size.y < thin_platform_height;
         if (player_box.findIntersection(solid_box))
         {
             if (velocity_y > 0.f)   // falling: land on top of the solid
             {
+                // A thin platform only catches us if our feet were above it before this frame
+                if (thin && feet_before > solid_box.position.y + 0.5f)
+                    continue;
                 // Neeche girte hue player ka top = platform top - player height; feet platform par aa jate hain.
                 shape.setPosition({ player_box.position.x, solid_box.position.y - player_box.size.y });
                 velocity_y = 0.f;
             }
             else if (velocity_y < 0.f)   // going up: bump the head on the underside
             {
+                if (thin)
+                    continue;   // we can jump up through thin platforms
                 // Ooper jump par collision ho to player ka top = ceiling ka bottom, taake overlap na ho.
                 shape.setPosition({ player_box.position.x, solid_box.position.y + solid_box.size.y });
                 velocity_y = 0.f;
@@ -386,7 +401,12 @@ void Player::update(
         {
             if (isDropIgnored(solid.getGlobalBounds()))
                 continue;   // not standing on a platform we are dropping through
-            if (probe.findIntersection(solid.getGlobalBounds()))
+            sf::FloatRect solid_box = solid.getGlobalBounds();
+            // A thin platform only holds us if our feet are on top of it (not if we are inside it)
+            if (solid_box.size.y < thin_platform_height
+                && shape.getPosition().y + shape.getSize().y > solid_box.position.y + 0.5f)
+                continue;
+            if (probe.findIntersection(solid_box))
             {
                 is_on_ground = true;
                 break;
@@ -406,9 +426,13 @@ void Player::update(
             bool found = false;
             for (const auto& solid : solids)
             {
-                if (isDropIgnored(solid.getGlobalBounds()))
+                sf::FloatRect solid_box = solid.getGlobalBounds();
+                if (isDropIgnored(solid_box))
                     continue;
-                if (probe.findIntersection(solid.getGlobalBounds()))
+                if (solid_box.size.y < thin_platform_height
+                    && shape.getPosition().y + shape.getSize().y > solid_box.position.y + 0.5f)
+                    continue;   // not below our feet
+                if (probe.findIntersection(solid_box))
                 {
                     found = true;
                     break;
@@ -534,8 +558,15 @@ void Player::update(
 
     sprite.setTextureRect(sf::IntRect({ col * 192, row * 192 }, { 192, 192 }));
 
-    // Health zero par Engine SOUL FORFEITED screen dikhayega.
-    // Automatic respawn nahi hoga; Retry se level dobara shuru hota hai.
+    // Died: respawn with full health
+    if (health <= 0)
+    {
+        shape.setPosition(spawn_point);
+        velocity_y = 0.f;
+        health = max_health;
+        invincible_timer = 1.5f;
+        is_clinging = false;
+    }
 }
 
 void Player::draw(sf::RenderWindow& window)
@@ -881,6 +912,8 @@ bool Player::canStandUp(const std::vector<sf::RectangleShape>& solids) const
 
     for (const auto& solid : solids)
     {
+        if (solid.getGlobalBounds().size.y < thin_platform_height)
+            continue;   // thin platforms do not block our head
         if (standing_box.findIntersection(solid.getGlobalBounds()))
             return false; // something is above our head
     }

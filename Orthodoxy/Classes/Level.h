@@ -16,6 +16,9 @@ class Level {
     Region region = Region::AshenBarrow;
     void addSolid(float x, float y, float width, float height);
     void addRamp(float x1, float y1, float x2, float y2);   // a smooth slope from (x1, y1) to (x2, y2) that can be walked on
+    void buildRamps();                                       // called after all platforms exist: snaps the ramp ends to the platforms and builds the columns
+    struct RampLine { float x1, y1, x2, y2; };
+    std::vector<RampLine> ramps;
     void buildAshenBarrow();
     void buildCemetery();
     void buildRedMoonRuins();
