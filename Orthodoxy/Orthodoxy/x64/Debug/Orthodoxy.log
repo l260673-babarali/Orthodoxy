@@ -1,0 +1,22 @@
+﻿  main.cpp
+  Camera.cpp
+  Enemy.cpp
+  Engine.cpp
+C:\Users\T14 GEN 4\Desktop\orthodoxy-ali1.1\Orthodoxy\Source Files\Engine.cpp(624,41): warning C4566: character represented by universal-character-name '\u25C6' cannot be represented in the current code page (1252)
+  Level.cpp
+  Player.cpp
+  Projectile.cpp
+  Spike.cpp
+  Generating Code...
+  Orthodoxy.vcxproj -> C:\Users\T14 GEN 4\Desktop\orthodoxy-ali1.1\Orthodoxy\x64\Debug\Orthodoxy.exe
+  C:\Users\T14 GEN 4\Desktop\orthodoxy-ali1.1\Orthodoxy\SFML-3.1.0 MSVC\bin\sfml-audio-3.dll
+  C:\Users\T14 GEN 4\Desktop\orthodoxy-ali1.1\Orthodoxy\SFML-3.1.0 MSVC\bin\sfml-audio-d-3.dll
+  C:\Users\T14 GEN 4\Desktop\orthodoxy-ali1.1\Orthodoxy\SFML-3.1.0 MSVC\bin\sfml-graphics-3.dll
+  C:\Users\T14 GEN 4\Desktop\orthodoxy-ali1.1\Orthodoxy\SFML-3.1.0 MSVC\bin\sfml-graphics-d-3.dll
+  C:\Users\T14 GEN 4\Desktop\orthodoxy-ali1.1\Orthodoxy\SFML-3.1.0 MSVC\bin\sfml-network-3.dll
+  C:\Users\T14 GEN 4\Desktop\orthodoxy-ali1.1\Orthodoxy\SFML-3.1.0 MSVC\bin\sfml-network-d-3.dll
+  C:\Users\T14 GEN 4\Desktop\orthodoxy-ali1.1\Orthodoxy\SFML-3.1.0 MSVC\bin\sfml-system-3.dll
+  C:\Users\T14 GEN 4\Desktop\orthodoxy-ali1.1\Orthodoxy\SFML-3.1.0 MSVC\bin\sfml-system-d-3.dll
+  C:\Users\T14 GEN 4\Desktop\orthodoxy-ali1.1\Orthodoxy\SFML-3.1.0 MSVC\bin\sfml-window-3.dll
+  C:\Users\T14 GEN 4\Desktop\orthodoxy-ali1.1\Orthodoxy\SFML-3.1.0 MSVC\bin\sfml-window-d-3.dll
+         10 file(s) copied.

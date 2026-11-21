@@ -1,0 +1,14 @@
+{
+    "version": 1,
+    "revision": 0,
+    "rules": [
+        {
+            "primary-output": "Orthodoxy\\x64\\Debug\\BurstSpirit.obj",
+            "outputs": [
+                "Orthodoxy\\x64\\Debug\\BurstSpirit.cpp.obj.dt.module.json",
+                "Orthodoxy\\x64\\Debug\\BurstSpirit.cpp.obj.dt.d.json"
+            ],
+            "requires": []
+        }
+    ]
+}
