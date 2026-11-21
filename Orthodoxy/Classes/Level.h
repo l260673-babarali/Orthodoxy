@@ -7,15 +7,17 @@
 //   1 = Red Moon Ruins (scene5, scene6, scene7)
 //   2 = Cathedral
 //   3 = Boss room (the Draconic Lord's arena)
-enum class Region { AshenBarrow = 0, RedMoonRuins = 1, Cathedral = 2, BossRoom = 3 };
+enum class Region { AshenBarrow = 0, RedMoonRuins = 1, Cathedral = 2, BossRoom = 3, Cemetery = 4 };
 
 class Level {
-    // 0-3 scene1-4, 4-6 continuation1-3, 7-9 cathedral1-3, 10-12 scene5-7
+    // 0-3 scene1-4, 4-6 continuation1-3, 7-9 Cathedral parts 1-3, 10-12 scene5-7, 13 boss room
     std::vector<sf::Texture> pictures;
     std::vector<sf::RectangleShape> platforms;
     Region region = Region::AshenBarrow;
     void addSolid(float x, float y, float width, float height);
+    void addRamp(float x1, float y1, float x2, float y2);   // a smooth slope from (x1, y1) to (x2, y2) that can be walked on
     void buildAshenBarrow();
+    void buildCemetery();
     void buildRedMoonRuins();
     void buildCathedral();
     void buildBossRoom();

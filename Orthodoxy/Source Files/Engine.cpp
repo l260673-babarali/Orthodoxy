@@ -106,16 +106,15 @@ Engine::Engine()
         std::cout << "Could not load holy_scroll.png\n";
     scroll_texture.setSmooth(false);
 
-    // Story paintings are independent of the actual level backgrounds.
-    const char* storyFiles[6] = {
-        "opening.png", "ashen.png", "redmoon.png",
+    const char* pictures[7] = {
+        "opening.png", "ashen.png", "cemetery.png", "redmoon.png",
         "cathedral.png", "boss.png", "ending.png"
     };
-    for (int i = 0; i < 6; i++)
+    for (int i = 0; i < 7; i++)
     {
-        std::string path = "Assets/Sprites/Story/" + std::string(storyFiles[i]);
+        std::string path = "Assets/Sprites/Story/" + std::string(pictures[i]);
         if (!story_pictures[i].loadFromFile(path))
-            std::cout << "Missing story artwork: " << path << "\n";
+            std::cout << "Missing story image: " << path << "\n";
     }
 }
 
@@ -169,8 +168,13 @@ void Engine::spawnEnemies()
         enemies.push_back(new Skeleton(900.f, 650.f));
         enemies.push_back(new BurstSpirit(1450.f, 380.f));
         enemies.push_back(new Skeleton(2700.f, 780.f));
-        enemies.push_back(new BurstSpirit(3750.f, 600.f));
-        enemies.push_back(new Skeleton(4850.f, 540.f));
+    }
+    else if (level.getRegion() == Region::Cemetery)
+    {
+        enemies.push_back(new Skeleton(1000.f, 500.f));
+        enemies.push_back(new BurstSpirit(1400.f, 600.f));
+        enemies.push_back(new Skeleton(1592.f, 540.f));
+        enemies.push_back(new BurstSpirit(2300.f, 450.f));
     }
     else if (level.getRegion() == Region::RedMoonRuins)
     {
@@ -186,11 +190,12 @@ void Engine::spawnEnemies()
     else if (level.getRegion() == Region::Cathedral)
     {
         difficulty = 3;
+        // The Cathedral is 3258 wide (3 pictures of 1086)
         enemies.push_back(new Skeleton(560.f, 750.f));
-        enemies.push_back(new Golem(1700.f, 790.f));
+        enemies.push_back(new Golem(1700.f, 760.f));
         enemies.push_back(new Phoenix(2450.f, 380.f));
-        enemies.push_back(new BurstSpirit(3000.f, 560.f));
-        enemies.push_back(new Skeleton(3350.f, 750.f));
+        enemies.push_back(new BurstSpirit(2800.f, 560.f));
+        enemies.push_back(new Skeleton(2600.f, 700.f));
     }
     else if (level.getRegion() == Region::BossRoom)
     {
@@ -295,7 +300,7 @@ void Engine::respawnEnemy(float delta_time)
     }
 
     Enemy* new_enemy = nullptr;
-    if (level.getRegion() == Region::AshenBarrow)
+    if (level.getRegion() == Region::AshenBarrow || level.getRegion() == Region::Cemetery)
     {
         if (enemy_respawn_number % 3 == 2)
             new_enemy = new BurstSpirit(spawn_x, spawn_y - 130.f);
@@ -526,12 +531,12 @@ void Engine::handleKey(sf::Keyboard::Key key)
         else if (key == K::W || key == K::Up)
         {
             codex_page--;
-            if (codex_page < 0) codex_page = 5;
+            if (codex_page < 0) codex_page = 6;
         }
         else if (key == K::S || key == K::Down)
         {
             codex_page++;
-            if (codex_page > 5) codex_page = 0;
+            if (codex_page > 6) codex_page = 0;
         }
         return;
     }
@@ -763,20 +768,22 @@ void Engine::drawControls()
         480.f, 450.f, gold, true);
 }
 
+
 void Engine::showRegionStory(Region region)
 {
-    // The original level order is Ashen Barrow, Red Moon Ruins, Cathedral, boss.
+    // Only shown when the knight enters a new region, not when loading a save.
     if (region == Region::AshenBarrow) story_page = 1;
-    else if (region == Region::RedMoonRuins) story_page = 2;
-    else if (region == Region::Cathedral) story_page = 3;
-    else story_page = 4;
+    else if (region == Region::Cemetery) story_page = 2;
+    else if (region == Region::RedMoonRuins) story_page = 3;
+    else if (region == Region::Cathedral) story_page = 4;
+    else story_page = 5;
     state = GameState::Story;
     clock.restart();
 }
 
 void Engine::drawStoryBackground(int imageNumber)
 {
-    if (imageNumber < 0 || imageNumber > 5) return;
+    if (imageNumber < 0 || imageNumber > 6) return;
     if (story_pictures[imageNumber].getSize().x == 0) return;
     sf::Sprite picture(story_pictures[imageNumber]);
     picture.setScale({ 960.f / story_pictures[imageNumber].getSize().x,
@@ -790,7 +797,7 @@ void Engine::drawStory()
     window.clear(ink);
 
     int image = story_page;
-    if (state == GameState::Epilogue) image = 5;
+    if (state == GameState::Epilogue) image = 6;
     drawStoryBackground(image);
 
     // A small dark parchment panel leaves the generated art visible on the right.
@@ -841,13 +848,21 @@ void Engine::drawStory()
     }
     else if (story_page == 2)
     {
+        title = "ASHEN CEMETERY";
+        lines[0] = "Beyond the Barrow, the dead still stir.";
+        lines[1] = "No prayer can reach these hollow graves.";
+        lines[2] = "Follow the broken path toward the ruins.";
+        count = 3;
+    }
+    else if (story_page == 3)
+    {
         title = "RED MOON RUINS";
         lines[0] = "Under a crimson moon, the curse grows.";
         lines[1] = "Ruined shrines burn with forbidden fire.";
         lines[2] = "Even the sky bears its ancient wound.";
         count = 3;
     }
-    else if (story_page == 3)
+    else if (story_page == 4)
     {
         title = "THE CATHEDRAL";
         lines[0] = "The last sanctuary stands in pieces.";
@@ -889,20 +904,21 @@ void Engine::drawCodex()
     uiText(window, heading, "LORE CODEX", 33, 480.f, 69.f, gold, true);
     uiRule(window, 98.f, 125.f, 764.f);
 
-    const char* titles[6] = {
+    const char* titles[7] = {
         "The Fallen Order", "The Penitent Knight", "The Eight Scrolls",
-        "Ashen Barrow", "Red Moon Ruins", "The Draconic Lord"
+        "Ashen Barrow", "Ashen Cemetery", "Red Moon Ruins", "The Draconic Lord"
     };
-    const char* paragraphs[6][4] = {
+    const char* paragraphs[7][4] = {
         { "The Order protected Orthodoxy and its Cathedral.", "When corruption rose, its knights were lost.", "Only the ruins remember their vows.", "" },
         { "The last warrior of the Order walks alone.", "Each fallen guardian brings him closer", "to the darkness beneath the Cathedral.", "" },
         { "Eight holy scrolls survived the collapse.", "They preserve fragments of sacred strength.", "Collect them to improve your abilities.", "" },
         { "This burial ground holds the old defenders.", "Their bodies rose when the curse spread.", "No grave in the Barrow remains peaceful.", "" },
+        { "Beyond the Barrow lie older tombs.", "A forgotten path leads through the graves", "toward the red glow of the fallen ruins.", "" },
         { "The moon burns above shattered temples.", "The deeper the curse reaches, the more", "dangerous the creatures become.", "" },
         { "The Lord waits at the end of the Cathedral.", "His ancient fire is tied to the curse.", "Defeating him may grant the land peace.", "" }
     };
 
-    for (int i = 0; i < 6; i++)
+    for (int i = 0; i < 7; i++)
     {
         float y = 157.f + i * 39.f;
         if (i == codex_page)
@@ -1128,6 +1144,8 @@ void Engine::recordSwordHit()
 std::string Engine::currentObjective() const
 {
     if (level.getRegion() == Region::AshenBarrow)
+        return "Reach the gate to the Ashen Cemetery";
+    if (level.getRegion() == Region::Cemetery)
         return "Reach the gate to Red Moon Ruins";
     if (level.getRegion() == Region::RedMoonRuins)
         return "Find the portal to the Cathedral";
@@ -1227,6 +1245,8 @@ void Engine::drawStageCleared()
     std::string area = "RED MOON RUINS";
     if (cleared_region == Region::AshenBarrow)
         area = "ASHEN BARROW";
+    else if (cleared_region == Region::Cemetery)
+        area = "ASHEN CEMETERY";
     else if (cleared_region == Region::Cathedral)
         area = "THE CATHEDRAL";
     uiText(window, headingFont, area, 19, 480.f, 181.f, parchment, true);
@@ -1300,7 +1320,8 @@ void Engine::collectScrolls()
     for (int i = 0; i < 8; ++i)
     {
         if (collected_scrolls[i]) continue;
-        if (i < 3 && level.getRegion() != Region::AshenBarrow) continue;
+        if (i < 2 && level.getRegion() != Region::AshenBarrow) continue;
+        if (i == 2 && level.getRegion() != Region::Cemetery) continue;
         if (i >= 3 && i < 6 && level.getRegion() != Region::RedMoonRuins) continue;
         if (i >= 6 && level.getRegion() != Region::Cathedral) continue;
 
@@ -1321,7 +1342,8 @@ void Engine::drawScrolls()
     for (int i = 0; i < 8; ++i)
     {
         if (collected_scrolls[i]) continue;
-        if (i < 3 && level.getRegion() != Region::AshenBarrow) continue;
+        if (i < 2 && level.getRegion() != Region::AshenBarrow) continue;
+        if (i == 2 && level.getRegion() != Region::Cemetery) continue;
         if (i >= 3 && i < 6 && level.getRegion() != Region::RedMoonRuins) continue;
         if (i >= 6 && level.getRegion() != Region::Cathedral) continue;
 

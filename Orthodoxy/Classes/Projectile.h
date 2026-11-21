@@ -13,12 +13,13 @@ private:
     int damage;
     bool alive = true;
     bool is_rock = false;   // true = draw the rock picture instead of a plain box
+    int look = 0;           // 0 = plain box, 1 = rock, 2 = boss fireball picture, 3 = dragon claw shard picture
     float age = 0.f;       // used to animate the rock
 
 public:
     Projectile(sf::Vector2f center, sf::Vector2f size, sf::Vector2f start_velocity,
         float start_gravity, int hit_damage, sf::Color color, float life_seconds,
-        bool rock = false);
+        bool rock = false, int picture = 0);
     void update(float delta_time, const std::vector<sf::RectangleShape>& solids);
     void draw(sf::RenderWindow& window);
     void kill();

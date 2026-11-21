@@ -17,15 +17,42 @@ namespace
         }
         return texture;
     }
+    // The boss fireball and the dragon claw shard (both made for the Draconic Lord)
+    sf::Texture& fireballTexture()
+    {
+        static sf::Texture texture;
+        static bool tried = false;
+        if (!tried)
+        {
+            tried = true;
+            if (!texture.loadFromFile("Assets/Sprites/Enemies/DraconicLord/lord_fireball.png"))
+                std::cout << "Could not load lord_fireball.png\n";
+        }
+        return texture;
+    }
+    sf::Texture& shardTexture()
+    {
+        static sf::Texture texture;
+        static bool tried = false;
+        if (!tried)
+        {
+            tried = true;
+            if (!texture.loadFromFile("Assets/Sprites/Enemies/DraconicLord/lord_scale.png"))
+                std::cout << "Could not load lord_scale.png\n";
+        }
+        return texture;
+    }
+    constexpr float fireball_picture_scale = 0.6f;   // the picture is 167 pixels wide
+    constexpr float shard_picture_scale = 0.8f;
     constexpr int rock_cell = 128;      // one frame in rock_sheet.png
     constexpr int rock_frames = 5;
     constexpr float rock_scale = 0.65f;
 }
 
 Projectile::Projectile(sf::Vector2f center, sf::Vector2f size, sf::Vector2f start_velocity,
-    float start_gravity, int hit_damage, sf::Color color, float life_seconds, bool rock)
+    float start_gravity, int hit_damage, sf::Color color, float life_seconds, bool rock, int picture)
     : velocity(start_velocity), gravity(start_gravity), lifetime(life_seconds), damage(hit_damage),
-    is_rock(rock)
+    is_rock(rock), look(rock ? 1 : picture)
 {
     shape.setSize(size);
     // Projectile ka origin uske center mein: width/2 aur height/2.
@@ -95,6 +122,38 @@ void Projectile::draw(sf::RenderWindow& window)
             angle = std::atan2(-velocity.y, -velocity.x);
         }
         sprite.setRotation(sf::radians(angle));
+        window.draw(sprite);
+    }
+    else if (look == 2 && fireballTexture().getSize().x > 0)
+    {
+        // Boss fireball: the picture has the ball on the right and the flame trail on the left
+        sf::Sprite sprite(fireballTexture());
+        float w = static_cast<float>(fireballTexture().getSize().x);
+        float h = static_cast<float>(fireballTexture().getSize().y);
+        sprite.setOrigin({ w * 0.78f, h / 2.f });   // the middle of the ball sits on the hitbox
+        sprite.setPosition(shape.getPosition());
+        float angle;
+        if (velocity.x >= 0.f)
+        {
+            sprite.setScale({ fireball_picture_scale, fireball_picture_scale });
+            angle = std::atan2(velocity.y, velocity.x);
+        }
+        else
+        {
+            sprite.setScale({ -fireball_picture_scale, fireball_picture_scale });
+            angle = std::atan2(-velocity.y, -velocity.x);
+        }
+        sprite.setRotation(sf::radians(angle));
+        window.draw(sprite);
+    }
+    else if (look == 3 && shardTexture().getSize().x > 0)
+    {
+        // Dragon claw shard: the picture points to the right, so just turn it where it flies
+        sf::Sprite sprite(shardTexture());
+        sprite.setOrigin({ shardTexture().getSize().x / 2.f, shardTexture().getSize().y / 2.f });
+        sprite.setPosition(shape.getPosition());
+        sprite.setScale({ shard_picture_scale, shard_picture_scale });
+        sprite.setRotation(sf::radians(std::atan2(velocity.y, velocity.x)));
         window.draw(sprite);
     }
     else

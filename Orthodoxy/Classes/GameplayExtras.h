@@ -40,11 +40,11 @@ namespace Extras
             enterSound.setVolume(55.f);
     }
 
-    // Position of the gate picture in Ashen Barrow (region 0). The "Press E" area of every
+    // Position of the gate picture in the Ashen Cemetery. The "Press E" area of every
     // region lives in Level::getDoorTrigger().
     float doorX()
     {
-        return 6284.f;
+        return 3026.f;
     }
 
     float doorY()
@@ -106,16 +106,10 @@ namespace Extras
         float y = doorY();
         sf::Vector2f promptPosition;
 
-        if (level.getRegion() == Region::AshenBarrow)
+        if (level.getRegion() == Region::Cemetery)
         {
             // Background mein flames
-            drawFire(window, 1505.f, 810.f, 3, 0.60f);
-            drawFire(window, 2545.f, 872.f, 3, 0.60f);
-            drawFire(window, 2976.f, 513.f, 3, 0.25f);
-            drawFire(window, 3232.f, 513.f, 3, 0.25f);
-            drawFire(window, 4700.f, 565.f, 3, 0.60f);
-            drawFire(window, 7145.f, 498.f, 3, 0.60f);
-            drawFire(window, 7820.f, 540.f, 3, 0.60f);
+            drawFire(window, 1442.f, 565.f, 3, 0.60f);
 
             if (doorTexture.getSize().x != 0)
             {
@@ -134,21 +128,9 @@ namespace Extras
             // Door bahut oopar hai; message visible rakhte hain.
             promptPosition = { x - 10.f, y + 440.f };
         }
-        else if (level.getRegion() == Region::Cathedral)
-        {
-            // The cathedral picture has no portal painted in it, so the portal picture is drawn here.
-            sf::FloatRect trigger = level.getDoorTrigger();
-            if (doorTexture.getSize().x != 0)
-            {
-                sf::Sprite gate(doorTexture);
-                gate.setPosition({ trigger.position.x + 40.f, trigger.position.y });
-                window.draw(gate);
-            }
-            promptPosition = { trigger.position.x + 10.f, trigger.position.y - 30.f };
-        }
         else
         {
-            // Red Moon Ruins: the portal is already painted in scene7,
+            // Red Moon Ruins and the Cathedral: the portal is already painted in the last picture,
             // so we only show the message above it.
             sf::FloatRect trigger = level.getDoorTrigger();
             // Door prompt trigger ke left X se 10 px aage aur trigger Y se 30 px ooper draw hota hai.

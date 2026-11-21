@@ -28,7 +28,7 @@ private:
     sf::Texture health_full_texture;
     sf::Texture health_empty_texture;
     sf::Texture scroll_texture;
-    sf::Texture story_pictures[6];
+    sf::Texture story_pictures[7];
     int story_page = 0;
     int codex_page = 0;
     bool codex_from_pause = false;
@@ -65,11 +65,11 @@ private:
     int upgrade_index = 0;
     bool collected_scrolls[8] = {};
     const sf::Vector2f scroll_positions[8] = {
-        // 8 scrolls spread over the whole game: 3 in Ashen Barrow, 3 in Red Moon Ruins, 2 in the Cathedral
+        // 8 scrolls spread over the whole game: 2 in Ashen Barrow, 1 in the Ashen Cemetery, 3 in Red Moon Ruins, 2 in the Cathedral
         // Each one sits just above a platform, near the start, the middle and the end of its region.
-        { 350.f, 690.f }, { 3086.f, 555.f }, { 5800.f, 629.f },
+        { 350.f, 525.f }, { 3086.f, 485.f }, { 2542.f, 629.f },
         { 400.f, 825.f }, { 2700.f, 660.f }, { 4810.f, 505.f },
-        { 350.f, 700.f }, { 3355.f, 590.f }
+        { 350.f, 650.f }, { 2400.f, 345.f }
     };
 
 

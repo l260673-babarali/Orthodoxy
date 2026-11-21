@@ -302,6 +302,7 @@ void Player::update(
 
     // ---- Horizontal movement + collision ----
     // Move first, then fix it: if we ended up inside a solid, push back out
+    bool grounded_before_move = is_on_ground;   // used for walking up / down ramps
     shape.move({ move_x, 0.f });
     if (move_x != 0.f)
     {
@@ -313,6 +314,28 @@ void Player::update(
                 continue;   // we are falling through this platform
             if (player_box.findIntersection(solid_box))
             {
+                // A small step (a ramp column): climb onto it instead of stopping
+                float step_height = (player_box.position.y + player_box.size.y) - solid_box.position.y;
+                if (grounded_before_move && velocity_y >= 0.f && step_height > 0.f && step_height <= max_step_up)
+                {
+                    sf::FloatRect lifted({ player_box.position.x, solid_box.position.y - player_box.size.y }, player_box.size);
+                    bool head_free = true;
+                    for (const auto& other : solids)
+                    {
+                        if (isDropIgnored(other.getGlobalBounds()))
+                            continue;
+                        if (lifted.findIntersection(other.getGlobalBounds()))
+                        {
+                            head_free = false;
+                            break;
+                        }
+                    }
+                    if (head_free)
+                    {
+                        shape.setPosition({ lifted.position.x, lifted.position.y });
+                        continue;
+                    }
+                }
                 if (move_x > 0.f)   // moving right: stop at the solid's left side
                     // Right ja kar wall se takraye to player ka left X = wall ka left X - player width.
                     shape.setPosition({ solid_box.position.x - player_box.size.x, player_box.position.y });
@@ -365,6 +388,36 @@ void Player::update(
                 continue;   // not standing on a platform we are dropping through
             if (probe.findIntersection(solid.getGlobalBounds()))
             {
+                is_on_ground = true;
+                break;
+            }
+        }
+    }
+
+    // Walking down a ramp: if the ground is only a few pixels below, stay on it
+    if (!is_on_ground && grounded_before_move && velocity_y >= 0.f && move_x != 0.f)
+    {
+        for (int drop = 2; drop <= static_cast<int>(max_step_down); drop++)
+        {
+            sf::FloatRect probe(
+                { shape.getPosition().x, shape.getPosition().y + static_cast<float>(drop) },
+                shape.getSize()
+            );
+            bool found = false;
+            for (const auto& solid : solids)
+            {
+                if (isDropIgnored(solid.getGlobalBounds()))
+                    continue;
+                if (probe.findIntersection(solid.getGlobalBounds()))
+                {
+                    found = true;
+                    break;
+                }
+            }
+            if (found)
+            {
+                shape.move({ 0.f, static_cast<float>(drop - 1) });
+                velocity_y = 0.f;
                 is_on_ground = true;
                 break;
             }
