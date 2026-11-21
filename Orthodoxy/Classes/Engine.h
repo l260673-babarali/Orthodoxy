@@ -12,7 +12,7 @@
 #include <iostream>
 
 // The screens of the game
-enum class GameState { MainMenu, Playing, Paused, StageCleared, Upgrades, Controls, Victory, Story, Codex, Epilogue };
+enum class GameState { MainMenu, Playing, Paused, StageCleared, Upgrades, Controls, Victory, Story, Codex, Epilogue, GameOver };
 
 // Runs the whole game: window, main loop, menus, and everything that lives in the world
 class Engine
@@ -29,10 +29,12 @@ private:
     sf::Texture health_empty_texture;
     sf::Texture scroll_texture;
     sf::Texture story_pictures[7];
+    sf::Texture death_picture;
     int story_page = 0;
     int codex_page = 0;
     bool codex_from_pause = false;
     void drawStory();
+    void drawGameOver();
     void drawCodex();
     void drawStoryBackground(int imageNumber);
     void showRegionStory(Region region);

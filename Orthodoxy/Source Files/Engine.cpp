@@ -116,6 +116,8 @@ Engine::Engine()
         if (!story_pictures[i].loadFromFile(path))
             std::cout << "Missing story image: " << path << "\n";
     }
+    if (!death_picture.loadFromFile("Assets/Sprites/Story/soul_forfeited.png"))
+        std::cout << "Missing: soul_forfeited.png\n";
 }
 
 Engine::~Engine()
@@ -171,6 +173,7 @@ void Engine::spawnEnemies()
     }
     else if (level.getRegion() == Region::Cemetery)
     {
+        difficulty = 2;  // Cemetery ki undead Ashen Barrow se thori tougher hain.
         enemies.push_back(new Skeleton(1000.f, 500.f));
         enemies.push_back(new BurstSpirit(1400.f, 600.f));
         enemies.push_back(new Skeleton(1592.f, 540.f));
@@ -219,7 +222,14 @@ void Engine::respawnEnemy(float delta_time)
     float delay = 14.f;
     int difficulty = 1;
 
-    if (level.getRegion() == Region::RedMoonRuins)
+    if (level.getRegion() == Region::Cemetery)
+    {
+        minimum = 2;
+        maximum = 4;
+        delay = 15.f;
+        difficulty = 2;
+    }
+    else if (level.getRegion() == Region::RedMoonRuins)
     {
         minimum = 3;
         maximum = 7;
@@ -256,12 +266,16 @@ void Engine::respawnEnemy(float delta_time)
         if (box.size.x < 160.f)
             continue;
 
+        // Stage ke bilkul bottom par giant safety floor par respawn mat karo.
+        if (box.size.x > 900.f && box.position.y > level.getHeight() - 35.f)
+            continue;
+
         float x = box.position.x + box.size.x / 2.f;
         float y = box.position.y;
         float gap = x - player_position.x;
         if (gap < 0.f)
             gap = -gap;
-        if (gap < 500.f || gap > 1300.f)
+        if (gap < 650.f || gap > 1450.f)
             continue;
 
         float height_gap = y - player_position.y;
@@ -276,7 +290,7 @@ void Engine::respawnEnemy(float delta_time)
             float enemy_gap = enemy->getCenter().x - x;
             if (enemy_gap < 0.f)
                 enemy_gap = -enemy_gap;
-            if (enemy_gap < 230.f)
+            if (enemy_gap < 280.f)
                 occupied = true;
         }
         if (occupied)
@@ -435,12 +449,39 @@ std::vector<std::string> Engine::menuItems() const
 
         return { "New Game", "Lore Codex", "Controls", "Quit" };
     }
-
+    if (state == GameState::GameOver)
+    {
+        if (hasSave())
+            return { "Retry", "Load Game", "Main Menu" };
+        return { "Retry", "Main Menu" };
+    }
     return { "Resume", "Lore Codex", "Controls", "Main Menu", "Quit" };
 }
 
 void Engine::activateMenuItem()
 {
+    if (state == GameState::GameOver)
+    {
+        std::vector<std::string> options = menuItems();
+        std::string selected = options[menu_index];
+        if (selected == "Retry")
+        {
+            Region retry_region = level.getRegion();
+            enterRegion(retry_region);
+            state = GameState::Playing;
+            clock.restart();
+        }
+        else if (selected == "Load Game")
+        {
+            loadGame();
+        }
+        else if (selected == "Main Menu")
+        {
+            state = GameState::MainMenu;
+            menu_index = 0;
+        }
+        return;
+    }
     if (state == GameState::MainMenu)
     {
         std::vector<std::string> items = menuItems();
@@ -712,6 +753,54 @@ void Engine::drawMenu(const std::string& title)
     }
     uiText(window, font, "W / S  -  SELECT       ENTER  -  CONFIRM",
         12, 480.f, 452.f, muted, true);
+}
+
+void Engine::drawGameOver()
+{
+    window.setView(ui_view);
+    window.clear(ink);
+
+    if (death_picture.getSize().x > 0)
+    {
+        sf::Sprite picture(death_picture);
+        picture.setScale({ 960.f / death_picture.getSize().x,
+                           540.f / death_picture.getSize().y });
+        window.draw(picture);
+    }
+
+    // Right-side dark panel keeps text readable over the illustration.
+    sf::RectangleShape shade({ 455.f, 540.f });
+    shade.setPosition({ 505.f, 0.f });
+    shade.setFillColor(sf::Color(9, 7, 13, 180));
+    window.draw(shade);
+
+    if (!font_loaded) return;
+    const sf::Font& heading = title_font_loaded ? title_font : font;
+    uiPanel(window, 524.f, 86.f, 404.f, 390.f);
+    uiText(window, font, "THE PENANCE REMAINS", 13, 726.f, 110.f, muted, true);
+    uiText(window, heading, "SOUL", 41, 726.f, 142.f, crimson, true);
+    uiText(window, heading, "FORFEITED", 38, 726.f, 189.f, gold, true);
+    uiRule(window, 574.f, 249.f, 304.f);
+    uiText(window, font, "The knight has fallen.", 16, 726.f, 266.f, parchment, true);
+    uiText(window, font, "The pilgrimage is not yet over.", 13, 726.f, 291.f, muted, true);
+
+    std::vector<std::string> options = menuItems();
+    for (int i = 0; i < (int)options.size(); ++i)
+    {
+        float y = 323.f + i * 43.f;
+        if (i == menu_index)
+        {
+            sf::RectangleShape focus({ 264.f, 35.f });
+            focus.setPosition({ 594.f, y - 3.f });
+            focus.setFillColor(sf::Color(100, 28, 42, 190));
+            focus.setOutlineThickness(1.f);
+            focus.setOutlineColor(crimson);
+            window.draw(focus);
+        }
+        uiText(window, heading, options[i], 19, 726.f, y,
+               i == menu_index ? gold : parchment, true);
+    }
+    uiText(window, font, "W/S SELECT    ENTER CONFIRM", 12, 726.f, 453.f, muted, true);
 }
 
 void Engine::drawControls()
@@ -1026,6 +1115,13 @@ void Engine::update()
     }
 
     player.update(delta_time, level.getPlatforms(), level.getWidth(), level.getHeight());
+    if (player.getHealth() <= 0)
+    {
+        state = GameState::GameOver;
+        menu_index = 0;
+        clock.restart();
+        return;
+    }
     collectScrolls();
     int health_before_combat = player.getHealth();
     Extras::updateSound(Extras::nearDoor(player.getCenter(), level));
@@ -1113,6 +1209,15 @@ void Engine::update()
     {
         if (!spikes[i].isAlive())
             spikes.erase(spikes.begin() + i);
+    }
+
+    // Pehle knight ki death check hoti hai; defeat par game-over screen khulti hai.
+    if (player.getHealth() <= 0)
+    {
+        state = GameState::GameOver;
+        menu_index = 0;
+        clock.restart();
+        return;
     }
 
     // The boss is down: show the victory screen
@@ -1421,6 +1526,12 @@ void Engine::render()
         window.display();
         return;
     }
+    if (state == GameState::GameOver)
+    {
+        drawGameOver();
+        window.display();
+        return;
+    }
     if (state == GameState::StageCleared)
     {
         drawStageCleared();
@@ -1623,6 +1734,8 @@ bool Engine::loadGame()
         if (flags[i] == 1) collectedCount++;
     }
     if (savedCollected != collectedCount || savedScrolls > savedCollected) valid = false;
+    if (savedStageKills > savedKills || savedRelics > savedCollected) valid = false;
+    if (!(savedTotal >= savedTime && savedTotal < 100000000.f)) valid = false;
     if (health > 4 + stats[0]) valid = false;
 
     if (!valid)

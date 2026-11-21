@@ -534,15 +534,8 @@ void Player::update(
 
     sprite.setTextureRect(sf::IntRect({ col * 192, row * 192 }, { 192, 192 }));
 
-    // Died: respawn with full health
-    if (health <= 0)
-    {
-        shape.setPosition(spawn_point);
-        velocity_y = 0.f;
-        health = max_health;
-        invincible_timer = 1.5f;
-        is_clinging = false;
-    }
+    // Health zero par Engine SOUL FORFEITED screen dikhayega.
+    // Automatic respawn nahi hoga; Retry se level dobara shuru hota hai.
 }
 
 void Player::draw(sf::RenderWindow& window)

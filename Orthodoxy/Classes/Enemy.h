@@ -264,7 +264,7 @@ private:
     static constexpr float walk_speed = 90.f;
     static constexpr float stop_range = 250.f;       // stops walking when this close to the player
     static constexpr float attack_pause = 1.f;       // rest between two attacks
-    static constexpr float recover_time = 0.7f;
+    static constexpr float recover_time = 0.85f;
 
     // The room is a flat arena. These must match the boss room width in Level.cpp.
     static constexpr float arena_left = 0.f;
@@ -278,7 +278,7 @@ private:
     static constexpr float scale_life = 2.5f;
 
     // 1 - Draconic strike
-    static constexpr float strike_windup_time = 0.55f;  // warning before the dash
+    static constexpr float strike_windup_time = 0.7f;  // warning before the dash
     static constexpr float strike_dash_time = 0.4f;
     static constexpr float strike_speed = 1100.f;
     static constexpr float strike_reach = 70.f;         // the slash reaches this far in front of the body
@@ -289,7 +289,7 @@ private:
     static constexpr float fireball_size = 30.f;
 
     // 3 - Planted blade
-    static constexpr float blade_windup_time = 0.5f;
+    static constexpr float blade_windup_time = 0.65f;
     static constexpr float blade_planted_time = 1.4f;   // the blade waits this long, then explodes
     static constexpr float blade_explode_time = 0.3f;
     static constexpr float explosion_width = 360.f;
