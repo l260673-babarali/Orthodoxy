@@ -107,6 +107,8 @@ Engine::Engine()
     if (!scroll_texture.loadFromFile("Assets/Sprites/Items/holy_scroll.png"))
         std::cout << "Could not load holy_scroll.png\n";
     scroll_texture.setSmooth(false);
+    if (!codex_background.loadFromFile("Assets/Sprites/Story/opening.png"))
+        std::cout << "Could not load opening.png\n";
 }
 
 Engine::~Engine()
@@ -422,9 +424,9 @@ std::vector<std::string> Engine::menuItems() const
     if (state == GameState::MainMenu)
     {
         if (hasSave())
-            return { "New Game", "Continue", "Controls", "Quit" };
+            return { "New Game", "Continue", "Lore Codex", "Controls", "Quit" };
 
-        return { "New Game", "Controls", "Quit" };
+        return { "New Game", "Lore Codex", "Controls", "Quit" };
     }
 
     return { "Resume", "Controls", "Main Menu", "Quit" };
@@ -444,6 +446,11 @@ void Engine::activateMenuItem()
         else if (selected == "Continue")
         {
             loadGame();
+        }
+        else if (selected == "Lore Codex")
+        {
+            codex_page = 0;
+            state = GameState::Codex;
         }
         else if (selected == "Controls")
         {
@@ -511,6 +518,25 @@ void Engine::handleKey(sf::Keyboard::Key key)
         {
             state = GameState::Paused;
             menu_index = 0;
+        }
+        return;
+    }
+
+    if (state == GameState::Codex)
+    {
+        if (key == K::Escape || key == K::Backspace)
+        {
+            state = GameState::MainMenu;   // menu_index is kept, so "Lore Codex" stays highlighted
+        }
+        else if (key == K::W || key == K::Up)
+        {
+            codex_page--;
+            if (codex_page < 0) codex_page = 6;
+        }
+        else if (key == K::S || key == K::Down)
+        {
+            codex_page++;
+            if (codex_page > 6) codex_page = 0;
         }
         return;
     }
@@ -623,19 +649,20 @@ void Engine::drawMenu(const std::string& title)
         return;
 
     const sf::Font& headingFont = title_font_loaded ? title_font : font;
-    uiPanel(window, 270.f, 82.f, 420.f, 381.f);
+    std::vector<std::string> items = menuItems();
+    const bool compact = items.size() >= 5;   // 5 rows (title menu with a save) need a taller panel
+    uiPanel(window, 270.f, compact ? 70.f : 82.f, 420.f, compact ? 405.f : 381.f);
     uiText(window, font, state == GameState::Paused ? "ALTAR OF REFLECTION" :
         "A DARK FANTASY ACTION PLATFORMER", 13, 480.f, 111.f, muted, true);
     uiText(window, headingFont, title, state == GameState::Paused ? 40 : 49,
         480.f, 143.f, gold, true);
     uiRule(window, 346.f, 199.f, 268.f);
 
-    std::vector<std::string> items = menuItems();
     for (int i = 0; i < static_cast<int>(items.size()); ++i)
     {
         bool selected = i == menu_index;
         // Menu row Y = first row 227 + row index x 49, is se options equal gap par hain.
-        const float y = 227.f + i * 49.f;
+        const float y = compact ? 215.f + i * 45.f : 227.f + i * 49.f;
         if (selected)
         {
             sf::RectangleShape focus({ 272.f, 38.f });
@@ -650,7 +677,66 @@ void Engine::drawMenu(const std::string& title)
             selected ? gold : parchment, true);
     }
     uiText(window, font, "W / S  -  SELECT       ENTER  -  CONFIRM",
-        12, 480.f, 439.f, muted, true);
+        12, 480.f, compact ? 452.f : 439.f, muted, true);
+}
+
+void Engine::drawCodex()
+{
+    window.setView(ui_view);
+    window.clear(ink);
+    if (codex_background.getSize().x > 0)
+    {
+        sf::Sprite picture(codex_background);
+        picture.setScale({ 960.f / codex_background.getSize().x,
+                           540.f / codex_background.getSize().y });
+        window.draw(picture);
+    }
+    sf::RectangleShape shade({ 960.f, 540.f });
+    shade.setFillColor(sf::Color(7, 5, 11, 175));
+    window.draw(shade);
+    uiPanel(window, 70.f, 42.f, 820.f, 455.f);
+    if (!font_loaded) return;
+    const sf::Font& heading = title_font_loaded ? title_font : font;
+    uiText(window, heading, "LORE CODEX", 33, 480.f, 69.f, gold, true);
+    uiRule(window, 98.f, 125.f, 764.f);
+
+    const char* titles[7] = {
+        "The Fallen Order", "The Penitent Knight", "The Eight Scrolls",
+        "Ashen Barrow", "Ashen Cemetery", "Red Moon Ruins", "The Draconic Lord"
+    };
+    const char* paragraphs[7][4] = {
+        { "The Order protected Orthodoxy and its Cathedral.", "When corruption rose, its knights were lost.", "Only the ruins remember their vows.", "" },
+        { "The last warrior of the Order walks alone.", "Each fallen guardian brings him closer", "to the darkness beneath the Cathedral.", "" },
+        { "Eight holy scrolls survived the collapse.", "They preserve fragments of sacred strength.", "Collect them to improve your abilities.", "" },
+        { "This burial ground holds the old defenders.", "Their bodies rose when the curse spread.", "No grave in the Barrow remains peaceful.", "" },
+        { "Beyond the Barrow lie older tombs.", "A forgotten path leads through the graves", "toward the red glow of the fallen ruins.", "" },
+        { "The moon burns above shattered temples.", "The deeper the curse reaches, the more", "dangerous the creatures become.", "" },
+        { "The Lord waits at the end of the Cathedral.", "His ancient fire is tied to the curse.", "Defeating him may grant the land peace.", "" }
+    };
+
+    for (int i = 0; i < 7; i++)
+    {
+        float y = 157.f + i * 39.f;
+        if (i == codex_page)
+        {
+            sf::RectangleShape highlight({ 257.f, 32.f });
+            highlight.setPosition({ 99.f, y - 4.f });
+            highlight.setFillColor(sf::Color(116, 38, 48, 160));
+            window.draw(highlight);
+        }
+        uiText(window, font, titles[i], 16, 109.f, y, i == codex_page ? gold : parchment);
+    }
+    sf::RectangleShape parchmentSheet({ 478.f, 290.f });
+    parchmentSheet.setPosition({ 375.f, 150.f });
+    parchmentSheet.setFillColor(sf::Color(31, 25, 27, 232));
+    parchmentSheet.setOutlineThickness(1.f);
+    parchmentSheet.setOutlineColor(border);
+    window.draw(parchmentSheet);
+    uiText(window, heading, titles[codex_page], 23, 397.f, 173.f, gold);
+    uiRule(window, 397.f, 218.f, 431.f);
+    for (int i = 0; i < 4; i++)
+        uiText(window, font, paragraphs[codex_page][i], 15, 398.f, 254.f + i * 30.f, parchment);
+    uiText(window, font, "W / S  -  SELECT     ESC  -  BACK", 13, 480.f, 464.f, gold, true);
 }
 
 void Engine::drawControls()
@@ -1182,6 +1268,12 @@ void Engine::render()
     if (state == GameState::Victory)
     {
         drawVictory();
+        window.display();
+        return;
+    }
+    if (state == GameState::Codex)
+    {
+        drawCodex();
         window.display();
         return;
     }

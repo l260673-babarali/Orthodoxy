@@ -4,8 +4,7 @@
 #include <vector>
 #include <cstdlib>
 
-// Slash sounds and background music. Everything lives in function-local statics so this
-// header can be included from several .cpp files without duplicate definitions.
+// Slash sounds and background music.
 namespace GameAudio
 {
     inline sf::SoundBuffer& buffer(int i)
@@ -43,7 +42,7 @@ namespace GameAudio
         if (music().openFromFile("Assets/Sounds/arcade_music.wav"))
         {
             music().setLooping(true);
-            music().setVolume(30.f);
+            music().setVolume(20.f);
             music().play();
         }
         else

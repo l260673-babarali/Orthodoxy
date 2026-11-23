@@ -375,7 +375,7 @@ void Level::draw(sf::RenderWindow& window)
         window.draw(s);
     }
     // Change this to true only when aligning collision rectangles.
-    bool showPlatforms = true;
+    bool showPlatforms = false;
     if (showPlatforms)
     {
         for (int i = 0; i < (int)platforms.size(); i++)

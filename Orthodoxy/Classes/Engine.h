@@ -12,7 +12,7 @@
 #include <iostream>
 
 // The screens of the game
-enum class GameState { MainMenu, Playing, Paused, StageCleared, Upgrades, Controls, Victory };
+enum class GameState { MainMenu, Playing, Paused, StageCleared, Upgrades, Controls, Victory, Codex };
 
 // Runs the whole game: window, main loop, menus, and everything that lives in the world
 class Engine
@@ -28,6 +28,8 @@ private:
     sf::Texture health_full_texture;
     sf::Texture health_empty_texture;
     sf::Texture scroll_texture;
+    sf::Texture codex_background;
+    int codex_page = 0;
     sf::Clock clock;
     Camera camera;
     const float boss_view_height = 720.f;   // boss room: 1280 x 720 of the 1920 x 1086 hall is visible, the camera follows the fight
@@ -107,6 +109,7 @@ private:
     std::vector<std::string> menuItems() const;
     void drawMenu(const std::string& title);
     void drawControls();
+    void drawCodex();
 
 public:
     Engine();
