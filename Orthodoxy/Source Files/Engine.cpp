@@ -1244,7 +1244,7 @@ bool Engine::hasSave() const
     std::string firstLine;
     if (!file.is_open()) return false;
     file >> firstLine;
-    return firstLine == "ORTHODOXY_SAVE_V1";
+    return firstLine == "ORTHODOXY_SAVE_V1" || firstLine == "ORTHODOXY_SAVE_V2";
 }
 
 bool Engine::saveGame()
@@ -1257,17 +1257,41 @@ bool Engine::saveGame()
         return false;
     }
 
+    // Save har value ko naam ke saath likhta hai, taake file aasani se samajh aaye.
     sf::Vector2f position = player.getBounds().position;
-    file << "ORTHODOXY_SAVE_V1\n";
-    file << (int)level.getRegion() << ' ' << position.x << ' ' << position.y << '\n';
-    file << player.getHealth() << ' ';
-    for (int i = 0; i < 4; i++) file << player.getStat(i) << ' ';
-    file << '\n';
-    file << scrolls << ' ' << collected_total << ' ' << total_kills << ' ';
-    file << stage_kills << ' ' << stage_relics << ' ' << best_combo << ' ' << stage_seconds << '\n';
-    for (int i = 0; i < 8; i++) file << (collected_scrolls[i] ? 1 : 0) << ' ';
-    file << '\n';
-    file << total_seconds << '\n';
+
+    std::string regionName = "AshenBarrow";
+    if (level.getRegion() == Region::Cemetery) regionName = "Cemetery";
+    else if (level.getRegion() == Region::RedMoonRuins) regionName = "RedMoonRuins";
+    else if (level.getRegion() == Region::Cathedral) regionName = "Cathedral";
+    else if (level.getRegion() == Region::BossRoom) regionName = "BossRoom";
+
+    file << "ORTHODOXY_SAVE_V2\n\n";
+    file << "Region: " << regionName << '\n';
+    file << "PlayerX: " << position.x << '\n';
+    file << "PlayerY: " << position.y << '\n';
+    file << "Health: " << player.getHealth() << "\n\n";
+
+    file << "Vitality: " << player.getStat(0) << '\n';
+    file << "Strength: " << player.getStat(1) << '\n';
+    file << "Endurance: " << player.getStat(2) << '\n';
+    file << "Agility: " << player.getStat(3) << "\n\n";
+
+    file << "ScrollsAvailable: " << scrolls << '\n';
+    file << "ScrollsCollected: " << collected_total << '\n';
+    file << "TotalKills: " << total_kills << '\n';
+    file << "StageKills: " << stage_kills << '\n';
+    file << "StageRelics: " << stage_relics << '\n';
+    file << "BestCombo: " << best_combo << '\n';
+    file << "StageSeconds: " << stage_seconds << '\n';
+    file << "TotalSeconds: " << total_seconds << "\n\n";
+
+    // Yes ka matlab scroll mil chuka hai; No ka matlab abhi nahi mila.
+    for (int i = 0; i < 8; i++)
+    {
+        file << "Scroll" << i + 1 << "Collected: "
+             << (collected_scrolls[i] ? "Yes" : "No") << '\n';
+    }
     file.close();
 
     if (!file)
@@ -1297,26 +1321,85 @@ bool Engine::loadGame()
     int stats[4] = {};
     int savedScrolls = 0, savedCollected = 0, savedKills = 0;
     int savedStageKills = 0, savedRelics = 0, savedCombo = 0;
-    float x = 0.f, y = 0.f, savedTime = 0.f;
+    float x = 0.f, y = 0.f, savedTime = 0.f, savedTotal = 0.f;
     int flags[8] = {};
+    bool valid = true;
 
-    file >> version >> regionNumber >> x >> y >> health;
-    for (int i = 0; i < 4; i++) file >> stats[i];
-    file >> savedScrolls >> savedCollected >> savedKills;
-    file >> savedStageKills >> savedRelics >> savedCombo >> savedTime;
-    for (int i = 0; i < 8; i++) file >> flags[i];
+    file >> version;
 
-    bool valid = (bool)file;
-    // The total time was added later: an older save does not have it, so use the stage time then
-    float savedTotal = savedTime;
-    if (valid)
+    if (version == "ORTHODOXY_SAVE_V2")
     {
-        float readTotal = 0.f;
-        if (file >> readTotal && readTotal >= savedTime && readTotal < 100000000.f)
-            savedTotal = readTotal;
+        // Nayi file mein har number se pehle uska label hota hai.
+        std::string label;
+        std::string regionName;
+        file >> label >> regionName;
+        if (label != "Region:") valid = false;
+
+        if (regionName == "AshenBarrow") regionNumber = 0;
+        else if (regionName == "RedMoonRuins") regionNumber = 1;
+        else if (regionName == "Cathedral") regionNumber = 2;
+        else if (regionName == "BossRoom") regionNumber = 3;
+        else if (regionName == "Cemetery") regionNumber = 4;
+        else valid = false;
+
+        file >> label >> x; if (label != "PlayerX:") valid = false;
+        file >> label >> y; if (label != "PlayerY:") valid = false;
+        file >> label >> health; if (label != "Health:") valid = false;
+        file >> label >> stats[0]; if (label != "Vitality:") valid = false;
+        file >> label >> stats[1]; if (label != "Strength:") valid = false;
+        file >> label >> stats[2]; if (label != "Endurance:") valid = false;
+        file >> label >> stats[3]; if (label != "Agility:") valid = false;
+
+        file >> label >> savedScrolls; if (label != "ScrollsAvailable:") valid = false;
+        file >> label >> savedCollected; if (label != "ScrollsCollected:") valid = false;
+        file >> label >> savedKills; if (label != "TotalKills:") valid = false;
+        file >> label >> savedStageKills; if (label != "StageKills:") valid = false;
+        file >> label >> savedRelics; if (label != "StageRelics:") valid = false;
+        file >> label >> savedCombo; if (label != "BestCombo:") valid = false;
+        file >> label >> savedTime; if (label != "StageSeconds:") valid = false;
+        file >> label >> savedTotal; if (label != "TotalSeconds:") valid = false;
+
+        for (int i = 0; i < 8; i++)
+        {
+            std::string answer;
+            file >> label >> answer;
+            std::string expected = "Scroll" + std::to_string(i + 1) + "Collected:";
+            if (label != expected) valid = false;
+
+            if (answer == "Yes") flags[i] = 1;
+            else if (answer == "No") flags[i] = 0;
+            else valid = false;
+        }
+
+        if (!file) valid = false;
     }
-    if (version != "ORTHODOXY_SAVE_V1") valid = false;
-    if (regionNumber < 0 || regionNumber > 3) valid = false;
+    else if (version == "ORTHODOXY_SAVE_V1")
+    {
+        // Purani number-only save files bhi load ho sakti hain.
+        file >> regionNumber >> x >> y >> health;
+        for (int i = 0; i < 4; i++) file >> stats[i];
+        file >> savedScrolls >> savedCollected >> savedKills;
+        file >> savedStageKills >> savedRelics >> savedCombo >> savedTime;
+        for (int i = 0; i < 8; i++) file >> flags[i];
+
+        if (!file) valid = false;
+        savedTotal = savedTime;
+
+        // Kuch purani saves mein total time nahi hota tha.
+        if (valid)
+        {
+            float readTotal = 0.f;
+            if (file >> readTotal && readTotal >= savedTime && readTotal < 100000000.f)
+                savedTotal = readTotal;
+        }
+    }
+    else
+    {
+        valid = false;
+    }
+
+    // Invalid values ko load na karo, warna game ki state kharab ho sakti hai.
+    if (regionNumber < 0 || regionNumber > 4) valid = false;
     if (!(x >= 0.f && x <= 7000.f && y >= -1000.f && y <= 1500.f)) valid = false;
     if (health < 1 || health > 9) valid = false;
     for (int i = 0; i < 4; i++)
@@ -1325,6 +1408,8 @@ bool Engine::loadGame()
     if (savedCollected < 0 || savedCollected > 8) valid = false;
     if (savedKills < 0 || savedStageKills < 0 || savedRelics < 0 || savedCombo < 0) valid = false;
     if (!(savedTime >= 0.f && savedTime < 100000000.f)) valid = false;
+    if (!(savedTotal >= savedTime && savedTotal < 100000000.f)) valid = false;
+
     int collectedCount = 0;
     for (int i = 0; i < 8; i++)
     {
@@ -1356,6 +1441,7 @@ bool Engine::loadGame()
     combo_hits = 0;
     combo_timer = 0.f;
     for (int i = 0; i < 8; i++) collected_scrolls[i] = (flags[i] == 1);
+    camera.setViewHeight(level.getRegion() == Region::BossRoom ? boss_view_height : zone_view_height);
     camera.follow(player.getCenter(), level.getWidth(), level.getTop(), level.getHeight());
     state = GameState::Playing;
     menu_index = 0;

@@ -128,9 +128,38 @@ Orthodoxy/
 - Saved values include the region, player position, health, RPG attributes, scrolls and collection flags, kill statistics, best combo, and play time.
 - Region transitions also trigger an automatic save.
 
-The save file is plain text and currently uses the `ORTHODOXY_SAVE_V1` format. Individual defeated-enemy states are not saved.
+The save file now uses the readable `ORTHODOXY_SAVE_V2` format with field names, region names, and `Yes`/`No` scroll flags. Older `ORTHODOXY_SAVE_V1` files can still be loaded; the next save writes V2. Saves from the Ashen Cemetery region (region 4 in V1) are supported.
 
-**Known limitation:** The current loader validates region numbers `0`–`3`, but Ashen Cemetery uses region number `4`. A save made while in the Cemetery can therefore be rejected until that validation is updated.
+For example:
+
+```text
+ORTHODOXY_SAVE_V2
+
+Region: AshenBarrow
+PlayerX: 120
+PlayerY: 500
+Health: 5
+
+Vitality: 1
+Strength: 1
+Endurance: 1
+Agility: 1
+
+ScrollsAvailable: 1
+ScrollsCollected: 1
+TotalKills: 5
+StageKills: 2
+StageRelics: 1
+BestCombo: 3
+StageSeconds: 60
+TotalSeconds: 120
+
+Scroll1Collected: Yes
+Scroll2Collected: No
+...
+```
+
+The actual save contains a line for all eight scrolls. A saved value is associated with the label immediately before it. Individual defeated-enemy states are not saved, and you should keep the field names intact if editing the text file manually.
 
 ## Development Status
 
