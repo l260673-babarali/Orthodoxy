@@ -1,53 +1,137 @@
 # Orthodoxy
 
-**Orthodoxy** is a 2D action-platformer developed in C++ using SFML. The player controls a knight exploring a monastery-themed level, navigating platforms, fighting enemies, and avoiding hazards.
+**Orthodoxy** is a gothic 2D action-platformer built in **C++** with **SFML 3**. Play as a knight navigating ruined monasteries, cemeteries, and dangerous platforms while fighting increasingly difficult enemies and collecting scrolls to improve your abilities.
 
-## Features
+The project is developed in **Visual Studio for Windows** and is still in active development.
 
-- Knight movement, jumping, double jump, crouching, and dashing
-- Melee strikes and combat against enemies
-- Enemy types including Golem and Phoenix
-- Projectiles and spike hazards
-- Health system with a visual HUD
-- Main menu and pause screen
-- Camera system and platform collision
-- Sprite animations and a monastery background
+## Gameplay Features
 
-## Project Structure
+- **Movement and platforming:** walking, double jumping, crouching, crouch-walking, dashing, wall climbing, and dropping through thin platforms.
+- **Sword combat:** light attacks and a heavy attack that activates after holding **K for 0.50 seconds**.
+- **Enemies:** Skeleton (undead), Burst Spirit, Phoenix, and Golem, with region-based difficulty and controlled enemy respawning.
+- **Boss fight:** Draconic Lord encounter in a separate arena.
+- **Progression:** eight collectible scrolls that can be spent on Vitality, Strength, Endurance, and Agility upgrades.
+- **Game statistics:** kill counter, combo tracking, stage timer, objectives, and stage-clear results.
+- **Save and load:** F5/F9 shortcuts, a Continue option, and automatic saves during region transitions.
+- **Presentation:** animated sprites, gothic HUD and menus, dedicated Controls screen, background music, combat sounds, ambient effects, portals, and camera tracking.
+- **Hazards:** projectiles, spikes, and enemy attacks. Dashing briefly avoids incoming damage.
 
-```
-Orthodoxy/
-├── Assets/
-│   └── Sprites/          # Player, enemy, health, and background images
-├── Classes/               # Game classes and gameplay systems
-├── Source Files/           # C++ implementation files
-├── main.cpp                # Program entry point
-└── Orthodoxy.vcxproj       # Visual Studio project
-```
+## Regions
 
-## Main Components
+The current progression order is:
 
-- **Engine** – Manages the game window, main loop, game states, menus, updates, and rendering.
-- **Player** – Handles knight movement, animation, health, and combat abilities.
-- **Level** – Loads and draws the background and platforms.
-- **Enemy / Golem / Phoenix** – Enemy behavior and different enemy types.
-- **Projectile** – Handles projectile movement and interactions.
-- **Spike** – Represents damaging level hazards.
-- **Camera** – Controls the view as the player moves.
-- **Collision** – Contains collision-related logic.
+1. **Ashen Barrow** — ruined outdoor platforms and undead enemies.
+2. **Ashen Cemetery** — a continuation of the opening area, with more platforming and enemies.
+3. **Red Moon Ruins** — a more challenging area featuring Skeletons, Burst Spirits, and Phoenixes.
+4. **Cathedral** — interior gothic ruins featuring stronger enemies, including Golems.
+5. **Boss Room** — the final Draconic Lord encounter.
 
-## Requirements
-
-- C++ compiler compatible with the project
-- [SFML 3](https://www.sfml-dev.org/) (Graphics, Window, and System modules)
-- Visual Studio / MSVC project environment (project file included)
+Players advance through portals, with a stage-clear screen between regions.
 
 ## Controls
 
-J to attack
-WASD to move
-L Shift to dash
+You can also view these controls from the **title screen** or **pause menu**.
 
-## Project Status
+| Key | Action |
+| --- | --- |
+| **A / D** | Move left / right |
+| **Space** | Jump / double jump |
+| **S** | Crouch |
+| **S + Space** | Drop through a thin platform |
+| **Left Shift** | Dash |
+| **J** | Light sword attack |
+| **Hold K** | Charged heavy attack (0.50 seconds) |
+| **Space + J** near a tall wall | Wall climb |
+| **E** near a portal | Move toward the next region |
+| **U** | Open or close upgrades |
+| **F5** | Save progress |
+| **F9** | Load progress |
+| **Esc** | Pause / resume / go back |
+| **W / S or arrow keys** | Navigate menus |
+| **Enter / Space** | Confirm menu selection |
 
-This is a work in progress; gameplay systems and content may change as development continues.
+The wall climb uses a short input buffer, so Space and J can be pressed almost together.
+
+## Building and Running
+
+### Requirements
+
+- **Windows** with **Visual Studio** and C++ desktop development support.
+- The **MSVC toolset** and Windows SDK required by the included Visual Studio project.
+- **SFML 3.1.0 (MSVC)** — the project expects its existing `SFML-3.1.0 MSVC` folder to remain inside `Orthodoxy/`.
+
+### Steps
+
+1. Clone or download the repository.
+2. Open **`Orthodoxy/Orthodoxy.vcxproj`** in Visual Studio (or open the repository's solution if available).
+3. Choose **x64** and **Debug** to start. The project uses **C++17** for x64 configurations.
+4. Make sure the project can find `Orthodoxy/SFML-3.1.0 MSVC/include`, `lib`, and `bin`. The project file already references these locations and copies the SFML DLLs after building.
+5. Set the **debugging working directory** to the folder containing `Assets` (normally `$(ProjectDir)`).
+6. Build and run the project.
+
+**Important:** Keep the `SFML-3.1.0 MSVC` folder and the `Assets` folder in their expected locations. The game loads textures, music, and effects using relative file paths. The UI also looks for fonts in the standard Windows Fonts directory.
+
+## Project Structure
+
+```text
+README.md
+Orthodoxy/
+├── Assets/
+│   ├── Sounds/
+│   └── Sprites/
+│       ├── Backgrounds/
+│       ├── Effects/
+│       ├── Enemies/
+│       ├── Health/
+│       ├── Items/
+│       └── Player/
+├── Classes/
+│   ├── Camera.h
+│   ├── Enemy.h
+│   ├── Engine.h
+│   ├── GameAudio.h
+│   ├── GameplayExtras.h
+│   ├── Level.h
+│   ├── Player.h
+│   ├── Projectile.h
+│   └── Spike.h
+├── Source Files/
+│   ├── Camera.cpp
+│   ├── Enemy.cpp
+│   ├── Engine.cpp
+│   ├── Level.cpp
+│   ├── Player.cpp
+│   ├── Projectile.cpp
+│   └── Spike.cpp
+├── SFML-3.1.0 MSVC/
+├── main.cpp
+└── Orthodoxy.vcxproj
+```
+
+### Main Code Responsibilities
+
+| Component | Responsibility |
+| --- | --- |
+| `Engine` | Window, game loop, menus, enemy management, game progress, HUD, save/load |
+| `Player` | Movement, platform collisions, animations, sword combat, RPG stats |
+| `Level` | Region backgrounds, platforms, ramps, portals, spawn positions |
+| `Enemy` | Shared enemy behavior and Skeleton, Burst Spirit, Golem, Phoenix, and boss implementations |
+| `Camera` | Following the knight while keeping the view within level boundaries |
+| `Projectile` / `Spike` | Ranged attacks and dangerous hazards |
+| `GameAudio` / `GameplayExtras` | Music, sword effects, portals, flames, and ambient audio |
+
+## Saving Progress
+
+- Press **F5** while playing to save, and **F9** to load.
+- **Continue** appears on the title screen when a recognized save file is present.
+- The game writes `orthodoxy_save.txt` in its **current working directory**.
+- Saved values include the region, player position, health, RPG attributes, scrolls and collection flags, kill statistics, best combo, and play time.
+- Region transitions also trigger an automatic save.
+
+The save file is plain text and currently uses the `ORTHODOXY_SAVE_V1` format. Individual defeated-enemy states are not saved.
+
+**Known limitation:** The current loader validates region numbers `0`–`3`, but Ashen Cemetery uses region number `4`. A save made while in the Cemetery can therefore be rejected until that validation is updated.
+
+## Development Status
+
+Orthodoxy is a work in progress. Gameplay balance, assets, boss encounters, and level polish may continue to change. This README documents features present in the repository's current source code.
